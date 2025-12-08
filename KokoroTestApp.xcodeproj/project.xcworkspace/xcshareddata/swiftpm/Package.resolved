@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mlalma/kokoro-ios",
       "state" : {
-        "revision" : "87602d0738306758921df1aeef55785b091104e7",
-        "version" : "1.0.9"
+        "revision" : "9a1e2614e5898106d00eec7fd21ff2fc89d805a6",
+        "version" : "1.0.10"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mlalma/MisakiSwift",
       "state" : {
-        "revision" : "dd594b87dcf7b2a9915be09ca44d38172e7c9dab",
-        "version" : "1.0.4"
+        "revision" : "bb5e3e3671ef550dc545a98f4a4c15f58ee649ec",
+        "version" : "1.0.5"
       }
     },
     {
