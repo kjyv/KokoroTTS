@@ -388,8 +388,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/mlalma/kokoro-ios";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.7;
+				kind = exactVersion;
+				version = 1.0.11;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
