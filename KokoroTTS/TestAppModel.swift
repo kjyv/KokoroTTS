@@ -451,7 +451,8 @@ final class TestAppModel: ObservableObject {
 
     for section in sections {
       // Split on sentence-ending punctuation while keeping the punctuation
-      let pattern = "(?<=[.!?])\\s+"
+      // Also handles sentences ending with ." or ." (period inside quotes)
+      let pattern = "(?<=[.!?][\"\u{201C}\u{201D}]?)\\s+"
       let regex = try! NSRegularExpression(pattern: pattern)
       let range = NSRange(section.startIndex..., in: section)
 
@@ -521,7 +522,7 @@ final class TestAppModel: ObservableObject {
     // Stop any existing playback
     stop()
 
-    let chunks = splitIntoChunks(text, sentencesPerChunk: 3)
+    let chunks = splitIntoChunks(text, sentencesPerChunk: 2)
     print("Split text into \(chunks.count) chunk(s)")
 
     let sampleRate = Double(KokoroTTS.Constants.samplingRate)
