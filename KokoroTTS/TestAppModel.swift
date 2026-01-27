@@ -253,6 +253,9 @@ final class TestAppModel: ObservableObject {
       speechSpeed = savedSpeed
     }
 
+    // Warm up the model with a short text to trigger MLX compilation
+    warmUpModel()
+
     // Configure audio session for iOS
     #if os(iOS)
       do {
@@ -265,13 +268,33 @@ final class TestAppModel: ObservableObject {
     #endif
   }
 
+  /// Warms up the TTS model by running a short inference.
+  /// This triggers MLX lazy compilation so the first real generation is fast.
+  private func warmUpModel() {
+    DispatchQueue.global(qos: .userInitiated).async { [self] in
+      print("Warming up TTS model...")
+      let startTime = Date()
+
+      // Run a minimal inference to trigger compilation
+      let _ = try? kokoroTTSEngine.generateAudio(
+        voice: voices[selectedVoice + ".npy"]!,
+        language: selectedVoice.first == "a" ? .enUS : .enGB,
+        text: "Hello",
+        speed: 1.0
+      )
+
+      let elapsed = Date().timeIntervalSince(startTime)
+      print("Model warm-up complete in \(String(format: "%.2f", elapsed))s")
+    }
+  }
+
   /// Splits text into chunks of sentences for processing within token limits.
   /// Also splits on headlines (lines followed by empty lines).
   /// - Parameters:
   ///   - text: The text to split
   ///   - sentencesPerChunk: Maximum number of sentences per chunk
   /// - Returns: Array of text chunks
-  private func splitIntoChunks(_ text: String, sentencesPerChunk: Int = 3) -> [String] {
+  private func splitIntoChunks(_ text: String, sentencesPerChunk: Int = 2) -> [String] {
     // First, split on headlines (line followed by empty line)
     // This regex matches: non-empty line, then one or more empty lines
     let paragraphs = text.components(separatedBy: .newlines)
