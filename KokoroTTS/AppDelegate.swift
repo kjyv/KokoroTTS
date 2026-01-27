@@ -1,27 +1,25 @@
 import AppKit
 import SwiftUI
+import MLX
 
 /// App delegate that provides macOS Services integration for the TTS functionality.
 /// This allows users to select text in any app and use "Speak with Kokoro" from the Services menu.
 class AppDelegate: NSObject, NSApplicationDelegate {
-  /// Reference to the shared view model
-  var model: TestAppModel? {
-    didSet {
-      // Process any pending text that arrived before the model was ready
-      if let model = model, let text = pendingText {
-        pendingText = nil
-        DispatchQueue.main.async {
-          model.inputText = text
-          model.say(text)
-        }
-      }
-    }
-  }
+  /// The shared view model - created immediately so it's available for Services
+  lazy var model: TestAppModel = {
+    // Configure MLX GPU settings before creating the model
+    Memory.cacheLimit = 50 * 1024 * 1024
+    Memory.memoryLimit = 900 * 1024 * 1024
+    return TestAppModel()
+  }()
 
   /// Text received from Services before the model was ready
   private var pendingText: String?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    // Initialize the model early so it's ready for service requests
+    _ = model
+
     // Register this object as a service provider
     NSApp.servicesProvider = self
 
@@ -52,14 +50,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     NSApp.activate(ignoringOtherApps: true)
 
     // Set the text in the input field and speak it
-    if let model = model {
-      DispatchQueue.main.async {
-        model.inputText = text
-        model.say(text)
-      }
-    } else {
-      // Model not ready yet (app just launched), queue the text
-      pendingText = text
+    DispatchQueue.main.async { [self] in
+      model.inputText = text
+      model.say(text)
     }
   }
 }

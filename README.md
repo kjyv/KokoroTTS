@@ -26,7 +26,7 @@ Otherwise cloning and running the application is done as any other app:
 1. **Clone the repository** (Git LFS will automatically download the model file):
    ```bash
    git clone https://github.com/kjyv/KokoroTTS.git
-   cd KokoroTestApp
+   cd KokoroTTS
    ```
 
 2. **Verify model file**: Ensure the model file was downloaded correctly:
