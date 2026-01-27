@@ -4,6 +4,7 @@ import SwiftUI
 import KokoroSwift
 import Combine
 import MLXUtilsLibrary
+import MediaPlayer
 
 /// The view model that manages text-to-speech functionality using the Kokoro TTS engine.
 /// - Loading and managing the Kokoro TTS model
@@ -111,6 +112,7 @@ final class TestAppModel: ObservableObject {
       playbackStartPosition += Date().timeIntervalSince(startTime)
     }
     playbackStartTime = nil
+    updateNowPlayingInfo()
   }
 
   /// Resumes playback from current position
@@ -139,6 +141,7 @@ final class TestAppModel: ObservableObject {
     playbackStartPosition = 0.0
     playbackStartTime = nil
     stringToFollowTheAudio = ""
+    updateNowPlayingInfo()
   }
 
   /// Plays from the beginning
@@ -172,6 +175,9 @@ final class TestAppModel: ObservableObject {
     playbackStartTime = Date()
     isPlaying = true
 
+    // Update Now Playing info for media keys
+    updateNowPlayingInfo()
+
     // Restart the timer for follow-along and position updates
     startPlaybackTimer()
   }
@@ -196,6 +202,7 @@ final class TestAppModel: ObservableObject {
         self.currentTime = self.totalDuration
         self.isPlaying = false
         self.playbackStartTime = nil
+        self.updateNowPlayingInfo()
         timer.invalidate()
         return
       }
@@ -256,6 +263,9 @@ final class TestAppModel: ObservableObject {
     // Warm up the model with a short text to trigger MLX compilation
     warmUpModel()
 
+    // Set up media key controls (play/pause on keyboard)
+    setupRemoteCommandCenter()
+
     // Configure audio session for iOS
     #if os(iOS)
       do {
@@ -286,6 +296,109 @@ final class TestAppModel: ObservableObject {
       let elapsed = Date().timeIntervalSince(startTime)
       print("Model warm-up complete in \(String(format: "%.2f", elapsed))s")
     }
+  }
+
+  /// Sets up the remote command center to handle media keys (play/pause).
+  private func setupRemoteCommandCenter() {
+    let commandCenter = MPRemoteCommandCenter.shared()
+
+    // Play command
+    commandCenter.playCommand.isEnabled = true
+    commandCenter.playCommand.addTarget { [weak self] _ in
+      guard let self, self.hasAudio else { return .commandFailed }
+      DispatchQueue.main.async {
+        self.resume()
+      }
+      return .success
+    }
+
+    // Pause command
+    commandCenter.pauseCommand.isEnabled = true
+    commandCenter.pauseCommand.addTarget { [weak self] _ in
+      guard let self else { return .commandFailed }
+      DispatchQueue.main.async {
+        self.pause()
+      }
+      return .success
+    }
+
+    // Toggle play/pause command
+    commandCenter.togglePlayPauseCommand.isEnabled = true
+    commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+      guard let self else { return .commandFailed }
+      DispatchQueue.main.async {
+        self.togglePlayPause()
+      }
+      return .success
+    }
+
+    // Skip forward/backward (optional - seek 10 seconds)
+    commandCenter.skipForwardCommand.isEnabled = true
+    commandCenter.skipForwardCommand.preferredIntervals = [10]
+    commandCenter.skipForwardCommand.addTarget { [weak self] _ in
+      guard let self, self.hasAudio else { return .commandFailed }
+      DispatchQueue.main.async {
+        self.seek(to: min(self.currentTime + 10, self.totalDuration))
+      }
+      return .success
+    }
+
+    commandCenter.skipBackwardCommand.isEnabled = true
+    commandCenter.skipBackwardCommand.preferredIntervals = [10]
+    commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
+      guard let self, self.hasAudio else { return .commandFailed }
+      DispatchQueue.main.async {
+        self.seek(to: max(self.currentTime - 10, 0))
+      }
+      return .success
+    }
+
+    // Change playback position (for scrubbing)
+    commandCenter.changePlaybackPositionCommand.isEnabled = true
+    commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+      guard let self,
+            let positionEvent = event as? MPChangePlaybackPositionCommandEvent else {
+        return .commandFailed
+      }
+      DispatchQueue.main.async {
+        self.seek(to: positionEvent.positionTime)
+      }
+      return .success
+    }
+  }
+
+  /// Updates the Now Playing info center with current playback information.
+  private func updateNowPlayingInfo() {
+    let infoCenter = MPNowPlayingInfoCenter.default()
+
+    // Set playback state to tell the system we're the active media app
+    if isPlaying {
+      infoCenter.playbackState = .playing
+    } else if hasAudio {
+      infoCenter.playbackState = .paused
+    } else {
+      infoCenter.playbackState = .stopped
+    }
+
+    var nowPlayingInfo = [String: Any]()
+
+    nowPlayingInfo[MPMediaItemPropertyTitle] = "Kokoro TTS"
+    nowPlayingInfo[MPMediaItemPropertyArtist] = displayNameForVoice(selectedVoice)
+    nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
+    nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = totalDuration
+    nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+
+    infoCenter.nowPlayingInfo = nowPlayingInfo
+  }
+
+  /// Returns the display name for a voice (e.g., "af_bella" -> "Bella").
+  private func displayNameForVoice(_ voice: String) -> String {
+    if let underscoreIndex = voice.firstIndex(of: "_") {
+      let nameStart = voice.index(after: underscoreIndex)
+      let name = String(voice[nameStart...])
+      return name.prefix(1).uppercased() + name.dropFirst()
+    }
+    return voice
   }
 
   /// Splits text into chunks of sentences for processing within token limits.
@@ -484,6 +597,9 @@ final class TestAppModel: ObservableObject {
     hasAudio = true
     currentTime = 0.0
     stringToFollowTheAudio = ""
+
+    // Update Now Playing info for media keys
+    updateNowPlayingInfo()
 
     print("Total audio length: " + String(format: "%.4f", totalAudioLength))
 
