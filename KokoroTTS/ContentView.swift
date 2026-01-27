@@ -5,9 +5,6 @@ struct ContentView: View {
   /// The view model that manages the TTS engine and audio playback
   @ObservedObject var viewModel: TestAppModel
 
-  /// The text input from the user that will be converted to speech
-  @State private var inputText: String = ""
-
   /// Returns the flag emoji for a voice based on its two-letter language/gender code prefix.
   /// Format: first letter = language (a=American, b=British), second letter = gender (f=female, m=male)
   private func flagForVoice(_ voice: String) -> String {
@@ -70,7 +67,7 @@ struct ContentView: View {
   var body: some View {
     VStack(spacing: 16) {
       // Text input field for entering speech content
-      TextEditor(text: $inputText)
+      TextEditor(text: $viewModel.inputText)
         .font(.body)
         .padding(8)
         .scrollContentBackground(.hidden)
@@ -81,7 +78,7 @@ struct ContentView: View {
             .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
         )
         .overlay(alignment: .topLeading) {
-          if inputText.isEmpty {
+          if viewModel.inputText.isEmpty {
             Text("Type something to say...")
               .font(.body)
               .foregroundColor(Color(nsColor: .placeholderTextColor))
@@ -151,8 +148,8 @@ struct ContentView: View {
 
       // Button to trigger text-to-speech synthesis
       Button {
-        if !inputText.isEmpty {
-          viewModel.say(inputText)
+        if !viewModel.inputText.isEmpty {
+          viewModel.say(viewModel.inputText)
         } else {
           viewModel.say("Please type something first")
         }

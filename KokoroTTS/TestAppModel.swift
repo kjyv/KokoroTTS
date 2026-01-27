@@ -33,6 +33,9 @@ final class TestAppModel: ObservableObject {
   /// Array of voice names available for selection in the UI
   @Published var voiceNames: [String] = []
 
+  /// The text input from the user (shared with UI and Services)
+  @Published var inputText: String = ""
+
   /// The currently selected voice name
   @Published var selectedVoice: String = "" {
     didSet {
