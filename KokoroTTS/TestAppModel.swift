@@ -266,47 +266,91 @@ final class TestAppModel: ObservableObject {
   }
 
   /// Splits text into chunks of sentences for processing within token limits.
+  /// Also splits on headlines (lines followed by empty lines).
   /// - Parameters:
   ///   - text: The text to split
   ///   - sentencesPerChunk: Maximum number of sentences per chunk
   /// - Returns: Array of text chunks
   private func splitIntoChunks(_ text: String, sentencesPerChunk: Int = 3) -> [String] {
-    // Remove newlines and replace with spaces
-    let cleanedText = text.replacingOccurrences(of: "\n", with: " ")
-      .replacingOccurrences(of: "\r", with: " ")
+    // First, split on headlines (line followed by empty line)
+    // This regex matches: non-empty line, then one or more empty lines
+    let paragraphs = text.components(separatedBy: .newlines)
 
-    // Split on sentence-ending punctuation while keeping the punctuation
-    let pattern = "(?<=[.!?])\\s+"
-    let regex = try! NSRegularExpression(pattern: pattern)
-    let range = NSRange(cleanedText.startIndex..., in: cleanedText)
+    var sections: [String] = []
+    var currentSection: [String] = []
+    var previousLineEmpty = false
 
-    var sentences: [String] = []
-    var lastEnd = cleanedText.startIndex
+    for line in paragraphs {
+      let trimmedLine = line.trimmingCharacters(in: .whitespaces)
 
-    regex.enumerateMatches(in: cleanedText, range: range) { match, _, _ in
-      if let match = match {
-        let matchRange = Range(match.range, in: cleanedText)!
-        let sentence = String(cleanedText[lastEnd..<matchRange.lowerBound])
-        sentences.append(sentence.trimmingCharacters(in: .whitespaces))
-        lastEnd = matchRange.upperBound
+      if trimmedLine.isEmpty {
+        // Empty line - if we have content, check if previous was a headline
+        if !currentSection.isEmpty {
+          // If we only have one line before empty line, it's likely a headline - make it its own chunk
+          if currentSection.count == 1 && !previousLineEmpty {
+            sections.append(currentSection[0])
+            currentSection = []
+          }
+        }
+        previousLineEmpty = true
+      } else {
+        // Non-empty line
+        if previousLineEmpty && !currentSection.isEmpty {
+          // We had content, then empty line(s), now new content - start new section
+          sections.append(currentSection.joined(separator: " "))
+          currentSection = []
+        }
+        currentSection.append(trimmedLine)
+        previousLineEmpty = false
       }
     }
 
-    // Add any remaining text as the last sentence
-    let remaining = String(cleanedText[lastEnd...]).trimmingCharacters(in: .whitespaces)
-    if !remaining.isEmpty {
-      sentences.append(remaining)
+    // Add remaining content
+    if !currentSection.isEmpty {
+      sections.append(currentSection.joined(separator: " "))
     }
 
-    // Group sentences into chunks
+    // Now split each section into sentences and group into chunks
     var chunks: [String] = []
-    for i in stride(from: 0, to: sentences.count, by: sentencesPerChunk) {
-      let end = min(i + sentencesPerChunk, sentences.count)
-      let chunk = sentences[i..<end].joined(separator: " ")
-      chunks.append(chunk)
+
+    for section in sections {
+      // Split on sentence-ending punctuation while keeping the punctuation
+      let pattern = "(?<=[.!?])\\s+"
+      let regex = try! NSRegularExpression(pattern: pattern)
+      let range = NSRange(section.startIndex..., in: section)
+
+      var sentences: [String] = []
+      var lastEnd = section.startIndex
+
+      regex.enumerateMatches(in: section, range: range) { match, _, _ in
+        if let match = match {
+          let matchRange = Range(match.range, in: section)!
+          let sentence = String(section[lastEnd..<matchRange.lowerBound])
+          let trimmed = sentence.trimmingCharacters(in: .whitespaces)
+          if !trimmed.isEmpty {
+            sentences.append(trimmed)
+          }
+          lastEnd = matchRange.upperBound
+        }
+      }
+
+      // Add any remaining text as the last sentence
+      let remaining = String(section[lastEnd...]).trimmingCharacters(in: .whitespaces)
+      if !remaining.isEmpty {
+        sentences.append(remaining)
+      }
+
+      // Group sentences into chunks
+      for i in stride(from: 0, to: sentences.count, by: sentencesPerChunk) {
+        let end = min(i + sentencesPerChunk, sentences.count)
+        let chunk = sentences[i..<end].joined(separator: " ")
+        if !chunk.isEmpty {
+          chunks.append(chunk)
+        }
+      }
     }
 
-    return chunks.isEmpty ? [cleanedText] : chunks
+    return chunks.isEmpty ? [text.replacingOccurrences(of: "\n", with: " ")] : chunks
   }
 
   /// Creates an audio buffer from audio samples.
