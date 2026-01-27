@@ -19,6 +19,11 @@
 				<string>NSStringPboardType</string>
 				<string>public.utf8-plain-text</string>
 			</array>
+			<key>NSKeyEquivalent</key>
+			<dict>
+				<key>default</key>
+				<string>T</string>
+			</dict>
 		</dict>
 	</array>
 </dict>
