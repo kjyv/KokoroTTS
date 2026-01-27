@@ -435,6 +435,86 @@ final class TestAppModel: ObservableObject {
     return voice
   }
 
+  /// Converts slashes between words to dashes for better speech flow.
+  /// For example: "and/or" becomes "and - or".
+  /// - Parameter text: The input text
+  /// - Returns: Text with word/word patterns converted to word - or
+  private func convertSlashesToDashes(_ text: String) -> String {
+    // Replace slashes between word characters with " - "
+    let pattern = "(?<=\\p{L})/(?=\\p{L})"
+    guard let regex = try? NSRegularExpression(pattern: pattern) else {
+      return text
+    }
+    let range = NSRange(text.startIndex..., in: text)
+    return regex.stringByReplacingMatches(in: text, range: range, withTemplate: " - ")
+  }
+
+  /// Removes hyphens from compound words to improve speech synthesis.
+  /// For example, "time-delayed" becomes "time delayed".
+  /// - Parameter text: The input text
+  /// - Returns: Text with hyphens between words replaced by spaces
+  private func removeHyphensFromCompoundWords(_ text: String) -> String {
+    // Replace hyphens between word characters with spaces
+    // This matches patterns like "word-word" but not standalone hyphens or dashes
+    let pattern = "(?<=\\p{L})-(?=\\p{L})"
+    guard let regex = try? NSRegularExpression(pattern: pattern) else {
+      return text
+    }
+    let range = NSRange(text.startIndex..., in: text)
+    return regex.stringByReplacingMatches(in: text, range: range, withTemplate: " ")
+  }
+
+  /// Converts parenthetical phrases to use dashes for better speech flow.
+  /// For example: "interrelates (or not) as soon" becomes "interrelates - or not - as soon"
+  /// When at end of sentence: "interrelates (or not)." becomes "interrelates - or not."
+  /// - Parameter text: The input text
+  /// - Returns: Text with parentheticals converted to dashes
+  private func convertParentheticalsToDashes(_ text: String) -> String {
+    var result = text
+
+    // Pattern matches (content) followed by optional punctuation
+    // Group 1: content inside parentheses
+    // Group 2: optional punctuation immediately after
+    // Group 3: what follows (space + word, or end)
+    let pattern = "\\(([^)]+)\\)([.,;:!?]?)(?=(\\s+\\w|\\s*$))"
+    guard let regex = try? NSRegularExpression(pattern: pattern) else {
+      return text
+    }
+
+    let range = NSRange(result.startIndex..., in: result)
+    let matches = regex.matches(in: result, range: range)
+
+    // Process matches in reverse order to preserve indices
+    for match in matches.reversed() {
+      guard let contentRange = Range(match.range(at: 1), in: result),
+            let fullRange = Range(match.range, in: result) else {
+        continue
+      }
+
+      let content = String(result[contentRange])
+      let punctuation = match.range(at: 2).length > 0
+        ? String(result[Range(match.range(at: 2), in: result)!])
+        : ""
+
+      // Check what follows to decide on trailing dash
+      let followedByMoreText = match.range(at: 3).length > 0 &&
+        Range(match.range(at: 3), in: result).map { !result[$0].trimmingCharacters(in: .whitespaces).isEmpty } ?? false
+
+      let replacement: String
+      if punctuation.isEmpty && followedByMoreText {
+        // Middle of sentence: "word (content) word" → "word - content - word"
+        replacement = "- \(content) -"
+      } else {
+        // End of clause/sentence: "word (content)." → "word - content."
+        replacement = "- \(content)\(punctuation)"
+      }
+
+      result.replaceSubrange(fullRange, with: replacement)
+    }
+
+    return result
+  }
+
   /// Splits text into chunks of sentences for processing within token limits.
   /// Also splits on headlines (lines followed by empty lines).
   /// - Parameters:
@@ -559,7 +639,12 @@ final class TestAppModel: ObservableObject {
     // Mark as generating
     isGeneratingAudio = true
 
-    let chunks = splitIntoChunks(text, sentencesPerChunk: 2)
+    // Preprocess text to improve speech output
+    var processedText = text
+    processedText = removeHyphensFromCompoundWords(processedText)
+    processedText = convertParentheticalsToDashes(processedText)
+    processedText = convertSlashesToDashes(processedText)
+    let chunks = splitIntoChunks(processedText, sentencesPerChunk: 2)
     print("Split text into \(chunks.count) chunk(s)")
 
     let sampleRate = Double(KokoroTTS.Constants.samplingRate)
