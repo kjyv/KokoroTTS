@@ -5,6 +5,12 @@ struct ContentView: View {
   /// The view model that manages the TTS engine and audio playback
   @ObservedObject var viewModel: TestAppModel
 
+  /// Tracks whether the text editor is focused
+  @FocusState private var isTextEditorFocused: Bool
+
+  /// Event monitor for spacebar play/pause
+  @State private var eventMonitor: Any?
+
   /// Returns the flag emoji for a voice based on its two-letter language/gender code prefix.
   /// Format: first letter = language (a=American, b=British), second letter = gender (f=female, m=male)
   private func flagForVoice(_ voice: String) -> String {
@@ -64,6 +70,12 @@ struct ContentView: View {
     return String(format: "%d:%02d", minutes, seconds)
   }
 
+  /// Removes focus from the text editor so spacebar can control playback.
+  private func unfocusTextEditor() {
+    isTextEditorFocused = false
+    NSApp.keyWindow?.makeFirstResponder(nil)
+  }
+
   var body: some View {
     VStack(spacing: 16) {
       // Text input field for entering speech content
@@ -73,6 +85,7 @@ struct ContentView: View {
         .scrollContentBackground(.hidden)
         .background(Color(nsColor: .textBackgroundColor))
         .cornerRadius(8)
+        .focused($isTextEditorFocused)
         .overlay(
           RoundedRectangle(cornerRadius: 8)
             .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
@@ -148,6 +161,7 @@ struct ContentView: View {
 
       // Button to trigger text-to-speech synthesis
       Button {
+        unfocusTextEditor()
         if !viewModel.inputText.isEmpty {
           viewModel.say(viewModel.inputText)
         } else {
@@ -175,7 +189,10 @@ struct ContentView: View {
             Slider(
               value: Binding(
                 get: { viewModel.currentTime },
-                set: { viewModel.seek(to: $0) }
+                set: {
+                  unfocusTextEditor()
+                  viewModel.seek(to: $0)
+                }
               ),
               in: 0...max(viewModel.totalDuration, 0.01)
             )
@@ -191,6 +208,7 @@ struct ContentView: View {
           HStack(spacing: 20) {
             // Restart button
             Button {
+              unfocusTextEditor()
               viewModel.playFromStart()
             } label: {
               Image(systemName: "backward.end.fill")
@@ -201,6 +219,7 @@ struct ContentView: View {
 
             // Play/Pause button
             Button {
+              unfocusTextEditor()
               viewModel.togglePlayPause()
             } label: {
               Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
@@ -211,6 +230,7 @@ struct ContentView: View {
 
             // Stop button
             Button {
+              unfocusTextEditor()
               viewModel.stop()
             } label: {
               Image(systemName: "stop.fill")
@@ -227,6 +247,36 @@ struct ContentView: View {
     .padding(20)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Color(nsColor: .windowBackgroundColor))
+    .onAppear {
+      // Set up event monitor for spacebar play/pause and Escape to unfocus
+      eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        // Check for Escape key (keyCode 53) - unfocus text editor
+        if event.keyCode == 53 {
+          isTextEditorFocused = false
+          NSApp.keyWindow?.makeFirstResponder(nil)
+          return nil
+        }
+
+        // Check for spacebar (keyCode 49)
+        if event.keyCode == 49 && viewModel.hasAudio {
+          // Check if a text view has focus - if so, let spacebar through for typing
+          if let firstResponder = NSApp.keyWindow?.firstResponder,
+             firstResponder is NSTextView {
+            return event  // Let text view handle the space
+          }
+          viewModel.togglePlayPause()
+          return nil  // Consume the event
+        }
+        return event  // Pass through other events
+      }
+    }
+    .onDisappear {
+      // Clean up event monitor
+      if let monitor = eventMonitor {
+        NSEvent.removeMonitor(monitor)
+        eventMonitor = nil
+      }
+    }
   }
 }
 
