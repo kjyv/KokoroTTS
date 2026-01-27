@@ -19,6 +19,8 @@ struct KokoroTestApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView(viewModel: model)
+        .frame(minWidth: 350, minHeight: 300)
     }
+    .defaultSize(width: 550, height: 550)
   }
 }

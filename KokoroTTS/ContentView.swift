@@ -226,27 +226,6 @@ struct ContentView: View {
         .padding(.vertical, 8)
       }
 
-      // Spoken text output area
-      VStack(alignment: .leading, spacing: 8) {
-        Text("Output:")
-          .font(.headline)
-          .foregroundColor(Color(nsColor: .labelColor))
-
-        ScrollView {
-          Text(viewModel.stringToFollowTheAudio)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundColor(Color(nsColor: .labelColor))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(8)
-        .background(Color(nsColor: .textBackgroundColor))
-        .cornerRadius(8)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-        )
-      }
-      .frame(maxHeight: .infinity)
     }
     .padding(20)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
