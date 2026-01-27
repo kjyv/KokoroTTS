@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// This view provides a simple interface for text-to-speech generation.
 struct ContentView: View {
@@ -74,6 +75,30 @@ struct ContentView: View {
   private func unfocusTextEditor() {
     isTextEditorFocused = false
     NSApp.keyWindow?.makeFirstResponder(nil)
+  }
+
+  /// Shows a save panel and saves the audio to the selected location.
+  private func saveAudio() {
+    let savePanel = NSSavePanel()
+    savePanel.allowedContentTypes = [.wav]
+    savePanel.nameFieldStringValue = "kokoro_speech.wav"
+    savePanel.title = "Save Audio"
+    savePanel.message = "Choose a location to save the audio file"
+
+    savePanel.begin { response in
+      if response == .OK, let url = savePanel.url {
+        do {
+          try viewModel.saveAudio(to: url)
+        } catch {
+          // Show error alert
+          let alert = NSAlert()
+          alert.messageText = "Failed to save audio"
+          alert.informativeText = error.localizedDescription
+          alert.alertStyle = .warning
+          alert.runModal()
+        }
+      }
+    }
   }
 
   var body: some View {
@@ -205,39 +230,58 @@ struct ContentView: View {
           }
 
           // Playback buttons
-          HStack(spacing: 20) {
-            // Restart button
+          HStack {
+            Spacer()
+
+            HStack(spacing: 20) {
+              // Restart button
+              Button {
+                unfocusTextEditor()
+                viewModel.playFromStart()
+              } label: {
+                Image(systemName: "backward.end.fill")
+                  .font(.title2)
+              }
+              .buttonStyle(.plain)
+              .foregroundColor(Color(nsColor: .labelColor))
+
+              // Play/Pause button
+              Button {
+                unfocusTextEditor()
+                viewModel.togglePlayPause()
+              } label: {
+                Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                  .font(.largeTitle)
+              }
+              .buttonStyle(.plain)
+              .foregroundColor(.accentColor)
+
+              // Stop button
+              Button {
+                unfocusTextEditor()
+                viewModel.stop()
+              } label: {
+                Image(systemName: "stop.fill")
+                  .font(.title2)
+              }
+              .buttonStyle(.plain)
+              .foregroundColor(Color(nsColor: .labelColor))
+            }
+
+            Spacer()
+
+            // Save button - only enabled when generation is complete
             Button {
               unfocusTextEditor()
-              viewModel.playFromStart()
+              saveAudio()
             } label: {
-              Image(systemName: "backward.end.fill")
+              Image(systemName: "square.and.arrow.down")
                 .font(.title2)
             }
             .buttonStyle(.plain)
-            .foregroundColor(Color(nsColor: .labelColor))
-
-            // Play/Pause button
-            Button {
-              unfocusTextEditor()
-              viewModel.togglePlayPause()
-            } label: {
-              Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                .font(.largeTitle)
-            }
-            .buttonStyle(.plain)
-            .foregroundColor(.accentColor)
-
-            // Stop button
-            Button {
-              unfocusTextEditor()
-              viewModel.stop()
-            } label: {
-              Image(systemName: "stop.fill")
-                .font(.title2)
-            }
-            .buttonStyle(.plain)
-            .foregroundColor(Color(nsColor: .labelColor))
+            .foregroundColor(viewModel.isGeneratingAudio ? Color(nsColor: .tertiaryLabelColor) : Color(nsColor: .labelColor))
+            .disabled(viewModel.isGeneratingAudio)
+            .help(viewModel.isGeneratingAudio ? "Wait for audio generation to complete" : "Save audio to file")
           }
         }
         .padding(.vertical, 8)
