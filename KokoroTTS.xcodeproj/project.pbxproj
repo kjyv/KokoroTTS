@@ -16,15 +16,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		5247E6922E8A5478003F2FA4 /* KokoroTestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KokoroTestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5247E6922E8A5478003F2FA4 /* KokoroTTS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KokoroTTS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		52CA91A52E8A6D4D00C7951A /* kokoro-v1_0.safetensors */ = {isa = PBXFileReference; lastKnownFileType = file; path = "kokoro-v1_0.safetensors"; sourceTree = "<group>"; };
 		52E385B22E9EDABD00B10D6C /* voices.npz */ = {isa = PBXFileReference; lastKnownFileType = file; path = voices.npz; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		5247E6942E8A5479003F2FA4 /* KokoroTestApp */ = {
+		5247E6942E8A5479003F2FA4 /* KokoroTTS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = KokoroTestApp;
+			path = KokoroTTS;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -48,7 +48,7 @@
 			isa = PBXGroup;
 			children = (
 				52CA91A42E8A6C7800C7951A /* Resources */,
-				5247E6942E8A5479003F2FA4 /* KokoroTestApp */,
+				5247E6942E8A5479003F2FA4 /* KokoroTTS */,
 				5247E6932E8A5478003F2FA4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,7 +56,7 @@
 		5247E6932E8A5478003F2FA4 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5247E6922E8A5478003F2FA4 /* KokoroTestApp.app */,
+				5247E6922E8A5478003F2FA4 /* KokoroTTS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -73,9 +73,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		5247E6912E8A5478003F2FA4 /* KokoroTestApp */ = {
+		5247E6912E8A5478003F2FA4 /* KokoroTTS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 5247E69D2E8A547B003F2FA4 /* Build configuration list for PBXNativeTarget "KokoroTestApp" */;
+			buildConfigurationList = 5247E69D2E8A547B003F2FA4 /* Build configuration list for PBXNativeTarget "KokoroTTS" */;
 			buildPhases = (
 				5247E68E2E8A5478003F2FA4 /* Sources */,
 				5247E68F2E8A5478003F2FA4 /* Frameworks */,
@@ -86,9 +86,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				5247E6942E8A5479003F2FA4 /* KokoroTestApp */,
+				5247E6942E8A5479003F2FA4 /* KokoroTTS */,
 			);
-			name = KokoroTestApp;
+			name = KokoroTTS;
 			packageProductDependencies = (
 				52FE059F2EAA89F50018FCF1 /* KokoroSwift */,
 				52FE05A22EAA8A200018FCF1 /* MLXUtilsLibrary */,
@@ -96,7 +96,7 @@
 				52FE05F02EABBB5A0018FCF1 /* KokoroSwift */,
 			);
 			productName = KokoroTestApp;
-			productReference = 5247E6922E8A5478003F2FA4 /* KokoroTestApp.app */;
+			productReference = 5247E6922E8A5478003F2FA4 /* KokoroTTS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -107,14 +107,14 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					5247E6912E8A5478003F2FA4 = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
 				};
 			};
-			buildConfigurationList = 5247E68D2E8A5478003F2FA4 /* Build configuration list for PBXProject "KokoroTestApp" */;
+			buildConfigurationList = 5247E68D2E8A5478003F2FA4 /* Build configuration list for PBXProject "KokoroTTS" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -131,7 +131,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				5247E6912E8A5478003F2FA4 /* KokoroTestApp */,
+				5247E6912E8A5478003F2FA4 /* KokoroTTS */,
 			);
 		};
 /* End PBXProject section */
@@ -194,6 +194,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = F229TX233T;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -217,6 +218,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -257,6 +259,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = F229TX233T;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -273,6 +276,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -302,7 +306,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kokoro.KokoroTestApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sb.KokoroTTS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -343,7 +347,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kokoro.KokoroTestApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sb.KokoroTTS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -363,7 +367,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		5247E68D2E8A5478003F2FA4 /* Build configuration list for PBXProject "KokoroTestApp" */ = {
+		5247E68D2E8A5478003F2FA4 /* Build configuration list for PBXProject "KokoroTTS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				5247E69B2E8A547B003F2FA4 /* Debug */,
@@ -372,7 +376,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		5247E69D2E8A547B003F2FA4 /* Build configuration list for PBXNativeTarget "KokoroTestApp" */ = {
+		5247E69D2E8A547B003F2FA4 /* Build configuration list for PBXNativeTarget "KokoroTTS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				5247E69E2E8A547B003F2FA4 /* Debug */,
