@@ -542,68 +542,81 @@ final class TestAppModel: ObservableObject {
     // Reset stored data
     audioSamples = []
     allTokens = []
-    var totalAudioLength: Double = 0.0
 
-    // Process each chunk and schedule buffers sequentially
-    for (index, chunk) in chunks.enumerated() {
-      print("Processing chunk \(index + 1)/\(chunks.count): \"\(chunk.prefix(50))...\"")
-
-      // Generate audio using the selected voice
-      let (audio, tokenArray) = try! kokoroTTSEngine.generateAudio(
-        voice: voices[selectedVoice + ".npy"]!,
-        language: selectedVoice.first! == "a" ? .enUS : .enGB,
-        text: chunk,
-        speed: speechSpeed
-      )
-
-      // Store audio samples for seeking
-      audioSamples.append(contentsOf: audio)
-
-      // Adjust token timestamps based on accumulated audio length
-      if let tokenArray {
-        for token in tokenArray {
-          let adjustedStart = token.start_ts.map { $0 + totalAudioLength }
-          let adjustedEnd = token.end_ts.map { $0 + totalAudioLength }
-          allTokens.append((text: token.text, start_ts: adjustedStart, end_ts: adjustedEnd, whitespace: token.whitespace))
-          print("\(token.text): \(adjustedStart, default: "UNK") - \(adjustedEnd, default: "UNK")")
-        }
-      }
-
-      let chunkAudioLength = Double(audio.count) / sampleRate
-      totalAudioLength += chunkAudioLength
-
-      print("Chunk \(index + 1) audio length: " + String(format: "%.4f", chunkAudioLength))
-
-      // Create and schedule the buffer
-      guard let buffer = createBuffer(from: audio, format: format) else {
-        continue
-      }
-
-      // First chunk interrupts any playing audio, subsequent chunks are queued
-      let options: AVAudioPlayerNodeBufferOptions = index == 0 ? .interrupts : []
-      playerNode.scheduleBuffer(buffer, at: nil, options: options, completionHandler: nil)
-
-      // Start playback immediately after first chunk is scheduled
-      if index == 0 {
-        playerNode.play()
-        isPlaying = true
-        playbackStartTime = Date()
-        playbackStartPosition = 0.0
-      }
-    }
-
-    // Update state
-    totalDuration = totalAudioLength
+    // Show player UI immediately
     hasAudio = true
     currentTime = 0.0
+    totalDuration = 0.0
     stringToFollowTheAudio = ""
 
-    // Update Now Playing info for media keys
-    updateNowPlayingInfo()
+    // Capture values needed for background processing
+    let voice = voices[selectedVoice + ".npy"]!
+    let language: Language = selectedVoice.first == "a" ? .enUS : .enGB
+    let speed = speechSpeed
 
-    print("Total audio length: " + String(format: "%.4f", totalAudioLength))
+    // Process chunks in background to keep UI responsive
+    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+      guard let self else { return }
 
-    // Start the playback timer
-    startPlaybackTimer()
+      var totalAudioLength: Double = 0.0
+
+      for (index, chunk) in chunks.enumerated() {
+        print("Processing chunk \(index + 1)/\(chunks.count): \"\(chunk.prefix(50))...\"")
+
+        // Generate audio using the selected voice
+        guard let (audio, tokenArray) = try? self.kokoroTTSEngine.generateAudio(
+          voice: voice,
+          language: language,
+          text: chunk,
+          speed: speed
+        ) else {
+          print("Failed to generate audio for chunk \(index + 1)")
+          continue
+        }
+
+        let chunkAudioLength = Double(audio.count) / sampleRate
+        let currentTotalLength = totalAudioLength
+
+        // Update state on main thread
+        DispatchQueue.main.async {
+          // Store audio samples for seeking
+          self.audioSamples.append(contentsOf: audio)
+
+          // Adjust token timestamps based on accumulated audio length
+          if let tokenArray {
+            for token in tokenArray {
+              let adjustedStart = token.start_ts.map { $0 + currentTotalLength }
+              let adjustedEnd = token.end_ts.map { $0 + currentTotalLength }
+              self.allTokens.append((text: token.text, start_ts: adjustedStart, end_ts: adjustedEnd, whitespace: token.whitespace))
+            }
+          }
+
+          // Create and schedule the buffer
+          guard let buffer = self.createBuffer(from: audio, format: format) else { return }
+
+          // First chunk interrupts any playing audio, subsequent chunks are queued
+          let options: AVAudioPlayerNodeBufferOptions = index == 0 ? .interrupts : []
+          self.playerNode.scheduleBuffer(buffer, at: nil, options: options, completionHandler: nil)
+
+          // Start playback immediately after first chunk is scheduled
+          if index == 0 {
+            self.playerNode.play()
+            self.isPlaying = true
+            self.playbackStartTime = Date()
+            self.playbackStartPosition = 0.0
+            self.startPlaybackTimer()
+          }
+
+          // Update duration as we process chunks
+          self.totalDuration = currentTotalLength + chunkAudioLength
+          self.updateNowPlayingInfo()
+        }
+
+        totalAudioLength += chunkAudioLength
+        print("Chunk \(index + 1) audio length: " + String(format: "%.4f", chunkAudioLength))
+      }
+
+      print("Total audio length: " + String(format: "%.4f", totalAudioLength))
+    }
   }
 }

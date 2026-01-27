@@ -1,8 +1,7 @@
-# KokoroTestApp
+# KokoroTTS
 
-✨ *New:* Voice styles are moved out of the library to the integrating application. The application provides now 28 different voice styles that can be used to generate speech.
-
-A SwiftUI test application for the Kokoro TTS (Text-to-Speech) model, demonstrating high-quality faster than real-time neural speech synthesis on macOS and iOS using Apple's MLX framework.
+Small macOS application for the Kokoro TTS (Text-to-Speech) model, allowing high-quality offline TTS.
+Integrates as a macOS service to speak selected text quickly.  
 
 ## Supported Platforms
 
@@ -26,7 +25,7 @@ Otherwise cloning and running the application is done as any other app:
 
 1. **Clone the repository** (Git LFS will automatically download the model file):
    ```bash
-   git clone https://github.com/yourusername/KokoroTestApp.git
+   git clone https://github.com/kjyv/KokoroTTS.git
    cd KokoroTestApp
    ```
 
@@ -38,7 +37,7 @@ Otherwise cloning and running the application is done as any other app:
 
 3. **Open in Xcode**:
    ```bash
-   open KokoroTestApp.xcodeproj
+   open KokoroTTS.xcodeproj
    ```
 
 4. **Build and run** the project in Xcode

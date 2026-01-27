@@ -13,12 +13,14 @@
 		52FE05A32EAA8A200018FCF1 /* MLXUtilsLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 52FE05A22EAA8A200018FCF1 /* MLXUtilsLibrary */; };
 		52FE05CE2EAA938B0018FCF1 /* MisakiSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 52FE05CD2EAA938B0018FCF1 /* MisakiSwift */; };
 		52FE05F12EABBB5A0018FCF1 /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 52FE05F02EABBB5A0018FCF1 /* KokoroSwift */; };
+		F81446422F29657800057215 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = F81446412F29657800057215 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		5247E6922E8A5478003F2FA4 /* KokoroTTS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KokoroTTS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		52CA91A52E8A6D4D00C7951A /* kokoro-v1_0.safetensors */ = {isa = PBXFileReference; lastKnownFileType = file; path = "kokoro-v1_0.safetensors"; sourceTree = "<group>"; };
 		52E385B22E9EDABD00B10D6C /* voices.npz */ = {isa = PBXFileReference; lastKnownFileType = file; path = voices.npz; sourceTree = "<group>"; };
+		F81446412F29657800057215 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -47,6 +49,7 @@
 		5247E6892E8A5478003F2FA4 = {
 			isa = PBXGroup;
 			children = (
+				F81446412F29657800057215 /* README.md */,
 				52CA91A42E8A6C7800C7951A /* Resources */,
 				5247E6942E8A5479003F2FA4 /* KokoroTTS */,
 				5247E6932E8A5478003F2FA4 /* Products */,
@@ -141,6 +144,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F81446422F29657800057215 /* README.md in Resources */,
 				52E385B32E9EDABD00B10D6C /* voices.npz in Resources */,
 				52CA91A62E8A6D4D00C7951A /* kokoro-v1_0.safetensors in Resources */,
 			);
