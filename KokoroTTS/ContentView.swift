@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 /// This view provides a simple interface for text-to-speech generation.
 struct ContentView: View {
   /// The view model that manages the TTS engine and audio playback
-  @ObservedObject var viewModel: TestAppModel
+  @ObservedObject var viewModel: KokoroTTSModel
 
   /// Tracks whether the text editor is focused
   @FocusState private var isTextEditorFocused: Bool
@@ -234,12 +234,12 @@ struct ContentView: View {
             Spacer()
 
             HStack(spacing: 20) {
-              // Restart button
+              // Stop button
               Button {
                 unfocusTextEditor()
-                viewModel.playFromStart()
+                viewModel.stop()
               } label: {
-                Image(systemName: "backward.end.fill")
+              Image(systemName: "backward.end.fill")
                   .font(.title2)
               }
               .buttonStyle(.plain)
@@ -256,16 +256,6 @@ struct ContentView: View {
               .buttonStyle(.plain)
               .foregroundColor(.accentColor)
 
-              // Stop button
-              Button {
-                unfocusTextEditor()
-                viewModel.stop()
-              } label: {
-                Image(systemName: "stop.fill")
-                  .font(.title2)
-              }
-              .buttonStyle(.plain)
-              .foregroundColor(Color(nsColor: .labelColor))
             }
 
             Spacer()
@@ -325,5 +315,5 @@ struct ContentView: View {
 }
 
 #Preview {
-  ContentView(viewModel: TestAppModel())
+  ContentView(viewModel: KokoroTTSModel())
 }

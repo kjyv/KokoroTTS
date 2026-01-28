@@ -5,11 +5,7 @@ Integrates as a macOS service to speak selected text quickly.
 
 ## Supported Platforms
 
-- iOS 18.0+
 - macOS 15.0+
-- (Other Apple platforms may work as well)
-
-*NOTE:* The application works only on iOS devices and it won't work on iOS emulator(s) because of lack of MLX support. 
 
 ## Installation
 

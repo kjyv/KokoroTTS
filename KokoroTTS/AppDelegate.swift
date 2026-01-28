@@ -6,11 +6,11 @@ import MLX
 /// This allows users to select text in any app and use "Speak with Kokoro" from the Services menu.
 class AppDelegate: NSObject, NSApplicationDelegate {
   /// The shared view model - created immediately so it's available for Services
-  lazy var model: TestAppModel = {
+  lazy var model: KokoroTTSModel = {
     // Configure MLX GPU settings before creating the model
     Memory.cacheLimit = 50 * 1024 * 1024
     Memory.memoryLimit = 900 * 1024 * 1024
-    return TestAppModel()
+    return KokoroTTSModel()
   }()
 
   /// Text received from Services before the model was ready
