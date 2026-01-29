@@ -9,6 +9,9 @@ struct ContentView: View {
   /// Tracks whether the text editor is focused
   @FocusState private var isTextEditorFocused: Bool
 
+  /// Tracks whether user wants to edit text (clicked into text area while paused)
+  @State private var isEditingText: Bool = false
+
   /// Event monitor for spacebar play/pause
   @State private var eventMonitor: Any?
 
@@ -135,12 +138,13 @@ struct ContentView: View {
     VStack(spacing: 16) {
       // Text input field / highlighted playback view
       Group {
-        if viewModel.hasAudio && !viewModel.allTokens.isEmpty {
-          // Show highlighted text during playback
+        if viewModel.hasAudio && !viewModel.allTokens.isEmpty && !isEditingText {
+          // Show highlighted text during playback or when paused (until user clicks to edit)
           ScrollView {
             Text(highlightedText())
               .font(.body)
               .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 5)
           }
           .padding(8)
           .background(Color(nsColor: .textBackgroundColor))
@@ -149,8 +153,14 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 8)
               .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
           )
+          .onTapGesture {
+            // Allow editing when tapping the text area (only when not playing)
+            if !viewModel.isPlaying {
+              isEditingText = true
+            }
+          }
         } else {
-          // Show editable text editor when not playing
+          // Show editable text editor
           TextEditor(text: $viewModel.inputText)
             .font(.body)
             .padding(8)
@@ -170,6 +180,13 @@ struct ContentView: View {
                   .padding(.horizontal, 13)
                   .padding(.vertical, 8)
                   .allowsHitTesting(false)
+              }
+            }
+            .onChange(of: viewModel.inputText) {
+              // Clear audio when text is edited so play button regenerates
+              // But not if audio is currently being generated (e.g., from service)
+              if viewModel.hasAudio && !viewModel.isGeneratingAudio {
+                viewModel.clearAudio()
               }
             }
         }
@@ -233,98 +250,93 @@ struct ContentView: View {
         Spacer()
       }
 
-      // Button to trigger text-to-speech synthesis
-      Button {
-        unfocusTextEditor()
-        if !viewModel.inputText.isEmpty {
-          viewModel.say(viewModel.inputText)
-        } else {
-          viewModel.say("Please type something first")
-        }
-      } label: {
-        Text("Speak")
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 8)
-      }
-      .buttonStyle(.borderedProminent)
-      .controlSize(.large)
+      // Player controls - always visible
+      VStack(spacing: 8) {
+        // Seek slider
+        HStack(spacing: 12) {
+          Text(formatTime(viewModel.currentTime))
+            .font(.caption)
+            .monospacedDigit()
+            .foregroundColor(Color(nsColor: .secondaryLabelColor))
+            .frame(width: 45, alignment: .trailing)
 
-      // Player controls
-      if viewModel.hasAudio {
-        VStack(spacing: 8) {
-          // Seek slider
-          HStack(spacing: 12) {
-            Text(formatTime(viewModel.currentTime))
-              .font(.caption)
-              .monospacedDigit()
-              .foregroundColor(Color(nsColor: .secondaryLabelColor))
-              .frame(width: 45, alignment: .trailing)
-
-            Slider(
-              value: Binding(
-                get: { viewModel.currentTime },
-                set: {
-                  unfocusTextEditor()
+          Slider(
+            value: Binding(
+              get: { viewModel.currentTime },
+              set: {
+                unfocusTextEditor()
+                if viewModel.hasAudio {
                   viewModel.seek(to: $0)
                 }
-              ),
-              in: 0...max(viewModel.totalDuration, 0.01)
-            )
-
-            Text(formatTime(viewModel.totalDuration))
-              .font(.caption)
-              .monospacedDigit()
-              .foregroundColor(Color(nsColor: .secondaryLabelColor))
-              .frame(width: 45, alignment: .leading)
-          }
-
-          // Playback buttons
-          HStack {
-            Spacer()
-
-            HStack(spacing: 20) {
-              // Stop button
-              Button {
-                unfocusTextEditor()
-                viewModel.stop()
-              } label: {
-              Image(systemName: "backward.end.fill")
-                  .font(.title2)
               }
-              .buttonStyle(.plain)
-              .foregroundColor(Color(nsColor: .labelColor))
+            ),
+            in: 0...max(viewModel.totalDuration, 0.01)
+          )
+          .disabled(!viewModel.hasAudio)
 
-              // Play/Pause button
-              Button {
-                unfocusTextEditor()
-                viewModel.togglePlayPause()
-              } label: {
-                Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                  .font(.largeTitle)
-              }
-              .buttonStyle(.plain)
-              .foregroundColor(.accentColor)
+          Text(formatTime(viewModel.totalDuration))
+            .font(.caption)
+            .monospacedDigit()
+            .foregroundColor(Color(nsColor: .secondaryLabelColor))
+            .frame(width: 45, alignment: .leading)
+        }
 
-            }
+        // Playback buttons
+        HStack {
+          Spacer()
 
-            Spacer()
-
-            // Save button - only enabled when generation is complete
+          HStack(spacing: 20) {
+            // Stop button
             Button {
               unfocusTextEditor()
-              saveAudio()
+              isEditingText = false
+              viewModel.stop()
             } label: {
-              Image(systemName: "square.and.arrow.down")
+              Image(systemName: "backward.end.fill")
                 .font(.title2)
             }
             .buttonStyle(.plain)
-            .foregroundColor(viewModel.isGeneratingAudio ? Color(nsColor: .tertiaryLabelColor) : Color(nsColor: .labelColor))
-            .disabled(viewModel.isGeneratingAudio)
-            .help(viewModel.isGeneratingAudio ? "Wait for audio generation to complete" : "Save audio to file")
+            .foregroundColor(viewModel.hasAudio ? Color(nsColor: .labelColor) : Color(nsColor: .tertiaryLabelColor))
+            .disabled(!viewModel.hasAudio)
+
+            // Play/Pause button - starts speaking if no audio, otherwise toggles
+            Button {
+              unfocusTextEditor()
+              if viewModel.hasAudio {
+                // Only exit edit mode when resuming, not when pausing
+                if !viewModel.isPlaying {
+                  isEditingText = false
+                }
+                viewModel.togglePlayPause()
+              } else if !viewModel.inputText.isEmpty {
+                isEditingText = false
+                viewModel.say(viewModel.inputText)
+              }
+            } label: {
+              Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                .font(.largeTitle)
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.accentColor)
           }
+
+          Spacer()
+
+          // Save button - only enabled when audio exists and generation is complete
+          Button {
+            unfocusTextEditor()
+            saveAudio()
+          } label: {
+            Image(systemName: "square.and.arrow.down")
+              .font(.title2)
+          }
+          .buttonStyle(.plain)
+          .foregroundColor(!viewModel.hasAudio || viewModel.isGeneratingAudio ? Color(nsColor: .tertiaryLabelColor) : Color(nsColor: .labelColor))
+          .disabled(!viewModel.hasAudio || viewModel.isGeneratingAudio)
+          .help(!viewModel.hasAudio ? "Generate audio first" : (viewModel.isGeneratingAudio ? "Wait for audio generation to complete" : "Save audio to file"))
         }
-        .padding(.vertical, 8)
       }
+      .padding(.vertical, 8)
 
     }
     .padding(20)
@@ -341,13 +353,23 @@ struct ContentView: View {
         }
 
         // Check for spacebar (keyCode 49)
-        if event.keyCode == 49 && viewModel.hasAudio {
+        if event.keyCode == 49 {
           // Check if a text view has focus - if so, let spacebar through for typing
           if let firstResponder = NSApp.keyWindow?.firstResponder,
              firstResponder is NSTextView {
             return event  // Let text view handle the space
           }
-          viewModel.togglePlayPause()
+          // Toggle play/pause if audio exists, otherwise start speaking
+          if viewModel.hasAudio {
+            // Only exit edit mode when resuming, not when pausing
+            if !viewModel.isPlaying {
+              isEditingText = false
+            }
+            viewModel.togglePlayPause()
+          } else if !viewModel.inputText.isEmpty {
+            isEditingText = false
+            viewModel.say(viewModel.inputText)
+          }
           return nil  // Consume the event
         }
         return event  // Pass through other events
@@ -358,6 +380,24 @@ struct ContentView: View {
       if let monitor = eventMonitor {
         NSEvent.removeMonitor(monitor)
         eventMonitor = nil
+      }
+    }
+    .onChange(of: viewModel.selectedVoice) {
+      // Clear audio when voice changes so play button regenerates
+      if viewModel.hasAudio {
+        viewModel.clearAudio()
+      }
+    }
+    .onChange(of: viewModel.speechSpeed) {
+      // Clear audio when speed changes so play button regenerates
+      if viewModel.hasAudio {
+        viewModel.clearAudio()
+      }
+    }
+    .onChange(of: viewModel.isPlaying) { oldValue, newValue in
+      // Reset editing mode when playback starts (including from service)
+      if newValue && !oldValue {
+        isEditingText = false
       }
     }
   }

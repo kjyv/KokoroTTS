@@ -17,11 +17,12 @@ extension KokoroTTSModel {
     updateNowPlayingInfo()
   }
 
-  /// Resumes playback from current position
+  /// Resumes playback from current position, or restarts if at the end
   func resume() {
     guard hasAudio, !isPlaying else { return }
-    // Use seek to reschedule the buffer from current position
-    seek(to: currentTime)
+    // If at the end, restart from beginning
+    let position = currentTime >= totalDuration ? 0.0 : currentTime
+    seek(to: position)
   }
 
   /// Toggles between play and pause
@@ -33,18 +34,39 @@ extension KokoroTTSModel {
     }
   }
 
-  /// Stops playback and resets to beginning
+  /// Stops playback and resets to beginning, clearing audio so text is editable again
   func stop() {
     timer?.invalidate()
     timer = nil
     playerNode.stop()
     isPlaying = false
+    hasAudio = false
     currentTime = 0.0
+    totalDuration = 0.0
     playbackStartPosition = 0.0
     playbackStartTime = nil
+    audioSamples = []
+    allTokens = []
     stringToFollowTheAudio = ""
     currentTokenIndex = -1
     updateNowPlayingInfo()
+  }
+
+  /// Clears audio state without stopping the engine (used when text is edited)
+  func clearAudio() {
+    timer?.invalidate()
+    timer = nil
+    playerNode.stop()
+    isPlaying = false
+    hasAudio = false
+    currentTime = 0.0
+    totalDuration = 0.0
+    playbackStartPosition = 0.0
+    playbackStartTime = nil
+    audioSamples = []
+    allTokens = []
+    stringToFollowTheAudio = ""
+    currentTokenIndex = -1
   }
 
   /// Seeks to a specific position in seconds
@@ -95,8 +117,8 @@ extension KokoroTTSModel {
         self.currentTime = self.playbackStartPosition + Date().timeIntervalSince(startTime)
       }
 
-      // Check if playback finished
-      if self.currentTime >= self.totalDuration {
+      // Check if playback finished naturally
+      if self.currentTime >= self.totalDuration && !self.isGeneratingAudio {
         self.currentTime = self.totalDuration
         self.isPlaying = false
         self.playbackStartTime = nil

@@ -248,6 +248,10 @@ final class KokoroTTSModel: ObservableObject {
 
           // Adjust token timestamps based on accumulated audio length
           if let tokenArray {
+            // Add space between chunks (not before the first chunk)
+            if index > 0 && !self.allTokens.isEmpty {
+              self.allTokens.append((text: " ", start_ts: currentTotalLength, end_ts: currentTotalLength, whitespace: ""))
+            }
             for token in tokenArray {
               let adjustedStart = token.start_ts.map { $0 + currentTotalLength }
               let adjustedEnd = token.end_ts.map { $0 + currentTotalLength }
