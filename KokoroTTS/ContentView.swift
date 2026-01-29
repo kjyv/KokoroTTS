@@ -167,6 +167,7 @@ struct ContentView: View {
             // Allow editing when tapping the text area (only when not playing)
             if !viewModel.isPlaying {
               isEditingText = true
+              isTextEditorFocused = true
             }
           }
         } else {
@@ -252,11 +253,6 @@ struct ContentView: View {
           .foregroundColor(Color(nsColor: .secondaryLabelColor))
           .monospacedDigit()
           .frame(width: 40)
-        Button("Reset") {
-          viewModel.speechSpeed = 1.0
-        }
-        .buttonStyle(.plain)
-        .foregroundColor(.accentColor)
         Spacer()
       }
 

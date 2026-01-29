@@ -59,6 +59,17 @@ extension KokoroTTSModel {
       return .success
     }
 
+    // Previous track command (seek to beginning)
+    commandCenter.previousTrackCommand.isEnabled = true
+    commandCenter.previousTrackCommand.addTarget { [weak self] _ in
+      guard let self, self.hasAudio else { return .commandFailed }
+      DispatchQueue.main.async {
+        self.pause()
+        self.seek(to: 0)
+      }
+      return .success
+    }
+
     // Change playback position (for scrubbing)
     commandCenter.changePlaybackPositionCommand.isEnabled = true
     commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
