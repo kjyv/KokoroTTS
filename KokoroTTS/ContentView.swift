@@ -74,31 +74,41 @@ struct ContentView: View {
     return String(format: "%d:%02d", minutes, seconds)
   }
 
-  /// Builds an AttributedString with the current word highlighted
+  /// Builds an AttributedString with the current word highlighted, preserving original formatting
   private func highlightedText() -> AttributedString {
-    var result = AttributedString()
+    let originalText = viewModel.inputText
+    var result = AttributedString(originalText)
+
+    // Default everything to dimmed (not yet spoken)
+    result.foregroundColor = Color(nsColor: .tertiaryLabelColor)
+
+    // Find each token in the original text and apply styling
+    var searchStart = originalText.startIndex
 
     for (index, token) in viewModel.allTokens.enumerated() {
-      var tokenStr = AttributedString(token.text)
+      // Skip space tokens added between chunks
+      if token.text == " " { continue }
+
+      // Find this token in the original text
+      guard let range = originalText.range(of: token.text, range: searchStart..<originalText.endIndex) else {
+        continue
+      }
+
+      // Convert String range to AttributedString range
+      let attrRange = Range<AttributedString.Index>(range, in: result)!
 
       if index == viewModel.currentTokenIndex {
         // Highlight the current word
-        tokenStr.backgroundColor = Color.accentColor
-        tokenStr.foregroundColor = Color.white
+        result[attrRange].backgroundColor = Color.accentColor
+        result[attrRange].foregroundColor = Color.white
       } else if let start = token.start_ts, start <= viewModel.currentTime {
         // Already spoken - normal color
-        tokenStr.foregroundColor = Color(nsColor: .labelColor)
-      } else {
-        // Not yet spoken - dimmed
-        tokenStr.foregroundColor = Color(nsColor: .tertiaryLabelColor)
+        result[attrRange].foregroundColor = Color(nsColor: .labelColor)
       }
+      // Not yet spoken tokens keep the default dimmed color
 
-      result.append(tokenStr)
-
-      // Add whitespace after token
-      if !token.whitespace.isEmpty {
-        result.append(AttributedString(" "))
-      }
+      // Move search position forward to avoid matching the same word twice
+      searchStart = range.upperBound
     }
 
     return result
