@@ -286,19 +286,19 @@ struct ContentView: View {
           Spacer()
 
           HStack(spacing: 20) {
-            // Stop button
+            // Back to start button
             Button {
               unfocusTextEditor()
-              isEditingText = false
-              viewModel.stop()
+              viewModel.pause()
+              viewModel.seek(to: 0)
             } label: {
               Image(systemName: "backward.end.fill")
                 .font(.title2)
+                .help("Back to start")
             }
             .buttonStyle(.plain)
             .foregroundColor(viewModel.hasAudio ? Color(nsColor: .labelColor) : Color(nsColor: .tertiaryLabelColor))
             .disabled(!viewModel.hasAudio)
-            .help("Stop and clear audio")
 
             // Play/Pause button - starts speaking if no audio, otherwise toggles
             Button {
@@ -316,10 +316,10 @@ struct ContentView: View {
             } label: {
               Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                 .font(.largeTitle)
+                .help(viewModel.hasAudio ? (viewModel.isPlaying ? "Pause" : "Play") : "Generate and play audio")
             }
             .buttonStyle(.plain)
             .foregroundColor(.accentColor)
-            .help(viewModel.hasAudio ? (viewModel.isPlaying ? "Pause" : "Play") : "Generate and play audio")
 
             // Cancel generation button - only shown while generating
             if viewModel.isGeneratingAudio {
@@ -329,10 +329,10 @@ struct ContentView: View {
               } label: {
                 Image(systemName: "hand.raised.fill")
                   .font(.title2)
+                  .help("Stop generating audio")
               }
               .buttonStyle(.plain)
               .foregroundColor(Color(nsColor: .secondaryLabelColor))
-              .help("Stop generating audio")
             }
           }
 
@@ -345,11 +345,11 @@ struct ContentView: View {
           } label: {
             Image(systemName: "square.and.arrow.down")
               .font(.title2)
+              .help(!viewModel.hasAudio ? "Generate audio before saving to file" : (viewModel.isGeneratingAudio ? "Wait for audio generation to complete" : "Save audio to file"))
           }
           .buttonStyle(.plain)
           .foregroundColor(!viewModel.hasAudio || viewModel.isGeneratingAudio ? Color(nsColor: .tertiaryLabelColor) : Color(nsColor: .labelColor))
           .disabled(!viewModel.hasAudio || viewModel.isGeneratingAudio)
-          .help(!viewModel.hasAudio ? "Generate audio first" : (viewModel.isGeneratingAudio ? "Wait for audio generation to complete" : "Save audio to file"))
         }
       }
       .padding(.vertical, 8)
