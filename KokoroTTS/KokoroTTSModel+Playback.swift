@@ -19,10 +19,33 @@ extension KokoroTTSModel {
 
   /// Resumes playback from current position, or restarts if at the end
   func resume() {
-    guard hasAudio, !isPlaying else { return }
+    guard hasAudio, !isPlaying, !audioSamples.isEmpty, let format = audioFormat else { return }
+
     // If at the end, restart from beginning
     let position = currentTime >= totalDuration ? 0.0 : currentTime
-    seek(to: position)
+
+    let sampleRate = format.sampleRate
+    let targetSample = Int(position * sampleRate)
+    let clampedSample = max(0, min(targetSample, audioSamples.count))
+
+    // Stop and reschedule
+    playerNode.stop()
+    timer?.invalidate()
+
+    let remainingSamples = Array(audioSamples[clampedSample...])
+    guard let buffer = createBuffer(from: remainingSamples, format: format) else { return }
+
+    playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts, completionHandler: nil)
+    playerNode.play()
+
+    // Update state
+    currentTime = Double(clampedSample) / sampleRate
+    playbackStartPosition = currentTime
+    playbackStartTime = Date()
+    isPlaying = true
+
+    updateNowPlayingInfo()
+    startPlaybackTimer()
   }
 
   /// Toggles between play and pause
@@ -79,6 +102,9 @@ extension KokoroTTSModel {
   func seek(to time: Double) {
     guard hasAudio, !audioSamples.isEmpty, let format = audioFormat else { return }
 
+    // Remember if we were playing before seeking
+    let wasPlaying = isPlaying
+
     let sampleRate = format.sampleRate
     let targetSample = Int(time * sampleRate)
     let clampedSample = max(0, min(targetSample, audioSamples.count))
@@ -91,21 +117,26 @@ extension KokoroTTSModel {
     let remainingSamples = Array(audioSamples[clampedSample...])
     guard let buffer = createBuffer(from: remainingSamples, format: format) else { return }
 
-    // Schedule and play
+    // Schedule the buffer
     playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts, completionHandler: nil)
-    playerNode.play()
 
-    // Update state
+    // Update position state
     currentTime = Double(clampedSample) / sampleRate
     playbackStartPosition = currentTime
-    playbackStartTime = Date()
-    isPlaying = true
+
+    // Only play if we were playing before
+    if wasPlaying {
+      playerNode.play()
+      playbackStartTime = Date()
+      isPlaying = true
+      startPlaybackTimer()
+    } else {
+      playbackStartTime = nil
+      isPlaying = false
+    }
 
     // Update Now Playing info for media keys
     updateNowPlayingInfo()
-
-    // Restart the timer for follow-along and position updates
-    startPlaybackTimer()
   }
 
   /// Starts the timer that updates playback position and follow-along text
