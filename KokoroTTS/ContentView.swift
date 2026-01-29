@@ -298,6 +298,7 @@ struct ContentView: View {
             .buttonStyle(.plain)
             .foregroundColor(viewModel.hasAudio ? Color(nsColor: .labelColor) : Color(nsColor: .tertiaryLabelColor))
             .disabled(!viewModel.hasAudio)
+            .help("Stop and clear audio")
 
             // Play/Pause button - starts speaking if no audio, otherwise toggles
             Button {
@@ -318,6 +319,21 @@ struct ContentView: View {
             }
             .buttonStyle(.plain)
             .foregroundColor(.accentColor)
+            .help(viewModel.hasAudio ? (viewModel.isPlaying ? "Pause" : "Play") : "Generate and play audio")
+
+            // Cancel generation button - only shown while generating
+            if viewModel.isGeneratingAudio {
+              Button {
+                unfocusTextEditor()
+                viewModel.cancelGeneration()
+              } label: {
+                Image(systemName: "hand.raised.fill")
+                  .font(.title2)
+              }
+              .buttonStyle(.plain)
+              .foregroundColor(Color(nsColor: .secondaryLabelColor))
+              .help("Stop generating audio")
+            }
           }
 
           Spacer()

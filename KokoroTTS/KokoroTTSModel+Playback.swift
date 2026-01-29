@@ -69,6 +69,12 @@ extension KokoroTTSModel {
     currentTokenIndex = -1
   }
 
+  /// Cancels ongoing audio generation but keeps existing audio
+  func cancelGeneration() {
+    shouldCancelGeneration = true
+    isGeneratingAudio = false
+  }
+
   /// Seeks to a specific position in seconds
   func seek(to time: Double) {
     guard hasAudio, !audioSamples.isEmpty, let format = audioFormat else { return }

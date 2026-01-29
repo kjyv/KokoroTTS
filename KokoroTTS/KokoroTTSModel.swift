@@ -71,6 +71,9 @@ final class KokoroTTSModel: ObservableObject {
   /// Whether audio generation is still in progress
   @Published var isGeneratingAudio: Bool = false
 
+  /// Flag to cancel ongoing generation
+  var shouldCancelGeneration: Bool = false
+
   /// Current playback position in seconds
   @Published var currentTime: Double = 0.0
 
@@ -177,8 +180,9 @@ final class KokoroTTSModel: ObservableObject {
     // Stop any existing playback
     stop()
 
-    // Mark as generating
+    // Mark as generating and reset cancel flag
     isGeneratingAudio = true
+    shouldCancelGeneration = false
 
     // Preprocess text to improve speech output
     var processedText = text
@@ -225,6 +229,12 @@ final class KokoroTTSModel: ObservableObject {
       var totalAudioLength: Double = 0.0
 
       for (index, chunk) in chunks.enumerated() {
+        // Check if generation was cancelled
+        if self.shouldCancelGeneration {
+          print("Generation cancelled")
+          break
+        }
+
         print("Processing chunk \(index + 1)/\(chunks.count): \"\(chunk.prefix(50))...\"")
 
         // Generate audio using the selected voice
