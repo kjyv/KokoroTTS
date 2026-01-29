@@ -34,7 +34,7 @@ xattr -cr /Applications/KokoroTTS.app
 
 ### Option 2: Build from Source
 
-⚠️ **Important**: This repository uses Git LFS to store the large neural network model file (`kokoro-v1_0.safetensors`, ~600MB). You must have Git LFS installed and configured before cloning:
+⚠️ **Important**: This repository uses Git LFS to store the large neural network model file (`kokoro-v1_0.safetensors`, ~315MB). You must have Git LFS installed and configured before cloning:
 
 ```bash
 # Using Homebrew (macOS)
@@ -53,7 +53,7 @@ Otherwise cloning and running the application is done as any other app:
 2. **Verify model file**: Ensure the model file was downloaded correctly:
    ```bash
    ls -la Resources/kokoro-v1_0.safetensors
-   # Should show a file of approximately 600MB
+   # Should show a file of approximately 315MB
    ```
 
 3. **Open in Xcode**:
