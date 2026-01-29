@@ -83,6 +83,9 @@ final class KokoroTTSModel: ObservableObject {
   /// Stored tokens for follow-along display
   var allTokens: [(text: String, start_ts: Double?, end_ts: Double?, whitespace: String)] = []
 
+  /// Index of the token currently being spoken (-1 if none)
+  @Published var currentTokenIndex: Int = -1
+
   /// Audio format for playback
   var audioFormat: AVAudioFormat?
 

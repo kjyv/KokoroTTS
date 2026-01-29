@@ -71,6 +71,36 @@ struct ContentView: View {
     return String(format: "%d:%02d", minutes, seconds)
   }
 
+  /// Builds an AttributedString with the current word highlighted
+  private func highlightedText() -> AttributedString {
+    var result = AttributedString()
+
+    for (index, token) in viewModel.allTokens.enumerated() {
+      var tokenStr = AttributedString(token.text)
+
+      if index == viewModel.currentTokenIndex {
+        // Highlight the current word
+        tokenStr.backgroundColor = Color.accentColor
+        tokenStr.foregroundColor = Color.white
+      } else if let start = token.start_ts, start <= viewModel.currentTime {
+        // Already spoken - normal color
+        tokenStr.foregroundColor = Color(nsColor: .labelColor)
+      } else {
+        // Not yet spoken - dimmed
+        tokenStr.foregroundColor = Color(nsColor: .tertiaryLabelColor)
+      }
+
+      result.append(tokenStr)
+
+      // Add whitespace after token
+      if !token.whitespace.isEmpty {
+        result.append(AttributedString(" "))
+      }
+    }
+
+    return result
+  }
+
   /// Removes focus from the text editor so spacebar can control playback.
   private func unfocusTextEditor() {
     isTextEditorFocused = false
@@ -103,29 +133,48 @@ struct ContentView: View {
 
   var body: some View {
     VStack(spacing: 16) {
-      // Text input field for entering speech content
-      TextEditor(text: $viewModel.inputText)
-        .font(.body)
-        .padding(8)
-        .scrollContentBackground(.hidden)
-        .background(Color(nsColor: .textBackgroundColor))
-        .cornerRadius(8)
-        .focused($isTextEditorFocused)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-        )
-        .overlay(alignment: .topLeading) {
-          if viewModel.inputText.isEmpty {
-            Text("Type something to say...")
+      // Text input field / highlighted playback view
+      Group {
+        if viewModel.hasAudio && !viewModel.allTokens.isEmpty {
+          // Show highlighted text during playback
+          ScrollView {
+            Text(highlightedText())
               .font(.body)
-              .foregroundColor(Color(nsColor: .placeholderTextColor))
-              .padding(.horizontal, 13)
-              .padding(.vertical, 8)
-              .allowsHitTesting(false)
+              .frame(maxWidth: .infinity, alignment: .leading)
           }
+          .padding(8)
+          .background(Color(nsColor: .textBackgroundColor))
+          .cornerRadius(8)
+          .overlay(
+            RoundedRectangle(cornerRadius: 8)
+              .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+          )
+        } else {
+          // Show editable text editor when not playing
+          TextEditor(text: $viewModel.inputText)
+            .font(.body)
+            .padding(8)
+            .scrollContentBackground(.hidden)
+            .background(Color(nsColor: .textBackgroundColor))
+            .cornerRadius(8)
+            .focused($isTextEditorFocused)
+            .overlay(
+              RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            )
+            .overlay(alignment: .topLeading) {
+              if viewModel.inputText.isEmpty {
+                Text("Type something to say...")
+                  .font(.body)
+                  .foregroundColor(Color(nsColor: .placeholderTextColor))
+                  .padding(.horizontal, 13)
+                  .padding(.vertical, 8)
+                  .allowsHitTesting(false)
+              }
+            }
         }
-        .frame(minHeight: 100)
+      }
+      .frame(minHeight: 100)
 
       // Voice selection picker and rating
       HStack {

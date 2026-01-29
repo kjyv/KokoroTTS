@@ -16,11 +16,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   /// Text received from Services before the model was ready
   private var pendingText: String?
 
-  /// Tracks if we're handling a service request (to suppress window activation)
-  private var handlingServiceRequest = false
-
-  /// Tracks if app was active when service request started
-  private var wasActiveBeforeService = false
+  /// Saved window frames to restore positions after service request
+  private var savedWindowFrames: [NSWindow: NSRect] = [:]
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     // Initialize the model early so it's ready for service requests
@@ -35,21 +32,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Update the Services menu
     NSUpdateDynamicServices()
 
-    // Observe window visibility to hide windows during service requests
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(windowDidBecomeVisible(_:)),
-      name: NSWindow.didBecomeKeyNotification,
-      object: nil
-    )
-  }
-
-  @objc private func windowDidBecomeVisible(_ notification: Notification) {
-    // If we're handling a service request and the app wasn't active before,
-    // hide the window immediately
-    if handlingServiceRequest && !wasActiveBeforeService {
-      if let window = notification.object as? NSWindow {
-        window.orderOut(nil)
+    // Set frame autosave name for the main window to remember position
+    DispatchQueue.main.async {
+      if let window = NSApp.windows.first {
+        window.setFrameAutosaveName("KokoroTTSMainWindow")
       }
     }
   }
@@ -61,15 +47,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   ///   - userData: User data from the service definition (unused)
   ///   - error: Error pointer to report failures
   @objc func speakWithKokoro(_ pboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
-    // Track service state
-    wasActiveBeforeService = NSApp.isActive
-    handlingServiceRequest = true
+    let wasActive = NSApp.isActive
 
-    // If app wasn't active, immediately hide all windows and prevent new ones from showing
-    if !wasActiveBeforeService {
-      for window in NSApp.windows {
-        window.orderOut(nil)
-      }
+    // Save window positions before any changes
+    for window in NSApp.windows {
+      savedWindowFrames[window] = window.frame
     }
 
     // Get the string from the pasteboard
@@ -78,8 +60,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
           let text = item.string(forType: .string) ?? pboard.string(forType: .string),
           !text.isEmpty else {
       error.pointee = "No text was provided" as NSString
-      handlingServiceRequest = false
       return
+    }
+
+    // Temporarily become an accessory app to prevent activation
+    if !wasActive {
+      NSApp.setActivationPolicy(.accessory)
     }
 
     // Set the text in the input field and speak it
@@ -87,9 +73,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       model.inputText = text
       model.say(text)
 
-      // Reset service state after a delay
-      DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-        self.handlingServiceRequest = false
+      // Restore window positions after SwiftUI processes state changes
+      DispatchQueue.main.async { [self] in
+        for (window, frame) in savedWindowFrames {
+          window.setFrame(frame, display: false)
+        }
+        savedWindowFrames.removeAll()
+
+        // Restore regular activation policy
+        if !wasActive {
+          NSApp.setActivationPolicy(.regular)
+        }
       }
     }
   }

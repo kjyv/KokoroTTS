@@ -43,6 +43,7 @@ extension KokoroTTSModel {
     playbackStartPosition = 0.0
     playbackStartTime = nil
     stringToFollowTheAudio = ""
+    currentTokenIndex = -1
     updateNowPlayingInfo()
   }
 
@@ -109,14 +110,29 @@ extension KokoroTTSModel {
     }
   }
 
-  /// Updates the follow-along text based on current playback position
+  /// Updates the follow-along text and current token index based on current playback position
   func updateFollowAlongText() {
     var text = ""
-    for token in allTokens {
+    var newTokenIndex = -1
+
+    for (index, token) in allTokens.enumerated() {
       if let start = token.start_ts, start <= currentTime {
         text += token.text + (token.whitespace.isEmpty ? "" : " ")
+
+        // Check if this is the currently active token
+        if let end = token.end_ts, currentTime < end {
+          newTokenIndex = index
+        } else if let end = token.end_ts, currentTime >= end {
+          // Past this token, check if there's a next one
+          if index == allTokens.count - 1 {
+            // Last token - keep it highlighted until playback ends
+            newTokenIndex = index
+          }
+        }
       }
     }
+
     stringToFollowTheAudio = text
+    currentTokenIndex = newTokenIndex
   }
 }
