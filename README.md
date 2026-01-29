@@ -7,11 +7,11 @@ Integrates as a macOS service to speak selected text quickly.
 
 ## Usage
 
-Select any text in any application and press **⌘⇧P** (Command+Shift+P) to speak it.
-
+Select any text in any application and select "Speak with Kokoro" from the context menu. Or press **⌘⇧P** (Command+Shift+P) to speak it.
 To change the keyboard shortcut, go to **System Settings → Keyboard → Keyboard Shortcuts → Services → Text → Speak with Kokoro**.
+This item will only be created after you've started the app for the first time.
 
-Alternatively, paste text directly into the app's text field and click Speak. The generated audio can also be saved to a file.
+Alternatively, paste text directly into the app's text field and press play. The generated audio can also be saved to a file.
 
 ## Supported Platforms
 
