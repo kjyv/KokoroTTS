@@ -9,10 +9,11 @@
 /* Begin PBXBuildFile section */
 		52CA91A62E8A6D4D00C7951A /* kokoro-v1_0.safetensors in Resources */ = {isa = PBXBuildFile; fileRef = 52CA91A52E8A6D4D00C7951A /* kokoro-v1_0.safetensors */; };
 		52E385B32E9EDABD00B10D6C /* voices.npz in Resources */ = {isa = PBXBuildFile; fileRef = 52E385B22E9EDABD00B10D6C /* voices.npz */; };
-		52FE05A02EAA89F50018FCF1 /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 52FE059F2EAA89F50018FCF1 /* KokoroSwift */; };
 		52FE05A32EAA8A200018FCF1 /* MLXUtilsLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 52FE05A22EAA8A200018FCF1 /* MLXUtilsLibrary */; };
 		52FE05CE2EAA938B0018FCF1 /* MisakiSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 52FE05CD2EAA938B0018FCF1 /* MisakiSwift */; };
 		52FE05F12EABBB5A0018FCF1 /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 52FE05F02EABBB5A0018FCF1 /* KokoroSwift */; };
+		52FE05F22EABBB5A0018FCF1 /* KokoroSwift in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 52FE05F02EABBB5A0018FCF1 /* KokoroSwift */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		52FE05CF2EAA938B0018FCF1 /* MisakiSwift in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 52FE05CD2EAA938B0018FCF1 /* MisakiSwift */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		F81446422F29657800057215 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = F81446412F29657800057215 /* README.md */; };
 /* End PBXBuildFile section */
 
@@ -31,6 +32,21 @@
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		52FE05F32EABBB5A0018FCF1 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				52FE05F22EABBB5A0018FCF1 /* KokoroSwift in Embed Frameworks */,
+				52FE05CF2EAA938B0018FCF1 /* MisakiSwift in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		5247E68F2E8A5478003F2FA4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -38,7 +54,6 @@
 			files = (
 				52FE05A32EAA8A200018FCF1 /* MLXUtilsLibrary in Frameworks */,
 				52FE05F12EABBB5A0018FCF1 /* KokoroSwift in Frameworks */,
-				52FE05A02EAA89F50018FCF1 /* KokoroSwift in Frameworks */,
 				52FE05CE2EAA938B0018FCF1 /* MisakiSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -83,6 +98,7 @@
 				5247E68E2E8A5478003F2FA4 /* Sources */,
 				5247E68F2E8A5478003F2FA4 /* Frameworks */,
 				5247E6902E8A5478003F2FA4 /* Resources */,
+				52FE05F32EABBB5A0018FCF1 /* Embed Frameworks */,
 				F888114A2F2AD6CE00A10A69 /* ShellScript */,
 			);
 			buildRules = (
@@ -94,7 +110,6 @@
 			);
 			name = KokoroTTS;
 			packageProductDependencies = (
-				52FE059F2EAA89F50018FCF1 /* KokoroSwift */,
 				52FE05A22EAA8A200018FCF1 /* MLXUtilsLibrary */,
 				52FE05CD2EAA938B0018FCF1 /* MisakiSwift */,
 				52FE05F02EABBB5A0018FCF1 /* KokoroSwift */,
@@ -439,10 +454,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		52FE059F2EAA89F50018FCF1 /* KokoroSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = KokoroSwift;
-		};
 		52FE05A22EAA8A200018FCF1 /* MLXUtilsLibrary */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MLXUtilsLibrary;
