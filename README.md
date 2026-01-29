@@ -1,13 +1,38 @@
 # KokoroTTS
 
 Small macOS application for the Kokoro TTS (Text-to-Speech) model, allowing high-quality offline TTS.
-Integrates as a macOS service to speak selected text quickly.  
+Integrates as a macOS service to speak selected text quickly.
+
+![Screenshot](KokoroTTS/Screenshot.png)
+
+## Usage
+
+Select any text in any application and press **⌘⇧P** (Command+Shift+P) to speak it.
+
+To change the keyboard shortcut, go to **System Settings → Keyboard → Keyboard Shortcuts → Services → Text → Speak with Kokoro**.
+
+Alternatively, paste text directly into the app's text field and click Speak. The generated audio can also be saved to a file.
 
 ## Supported Platforms
 
 - macOS 15.0+
 
 ## Installation
+
+### Option 1: Download Release
+
+Download the latest DMG from the [Releases](https://github.com/kjyv/KokoroTTS/releases) page.
+
+Since the app is not signed, macOS will block it by default. To open it:
+1. Right-click the app and select "Open"
+2. Click "Open" in the dialog that appears
+
+Or remove the quarantine attribute via Terminal:
+```bash
+xattr -cr /Applications/KokoroTTS.app
+```
+
+### Option 2: Build from Source
 
 ⚠️ **Important**: This repository uses Git LFS to store the large neural network model file (`kokoro-v1_0.safetensors`, ~600MB). You must have Git LFS installed and configured before cloning:
 

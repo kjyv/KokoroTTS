@@ -1,0 +1,54 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Checkout LFS objects
+        run: git lfs pull
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Build application
+        run: |
+          xcodebuild -project KokoroTTS.xcodeproj \
+            -scheme KokoroTTS \
+            -configuration Release \
+            -derivedDataPath build \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Create DMG
+        run: |
+          # Create a temporary directory for DMG contents
+          mkdir -p dmg-contents
+          cp -R build/Build/Products/Release/KokoroTTS.app dmg-contents/
+          ln -s /Applications dmg-contents/Applications
+
+          # Create the DMG
+          hdiutil create -volname "KokoroTTS" \
+            -srcfolder dmg-contents \
+            -ov -format UDZO \
+            KokoroTTS.dmg
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: KokoroTTS.dmg
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
