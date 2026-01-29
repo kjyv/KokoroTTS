@@ -3,7 +3,7 @@
 Small macOS application for the Kokoro TTS (Text-to-Speech) model, allowing high-quality offline TTS.
 Integrates as a macOS service to speak selected text quickly.
 
-![Screenshot](KokoroTTS/Screenshot.png)
+![Screenshot](Screenshot.png)
 
 ## Usage
 
