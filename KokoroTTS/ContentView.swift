@@ -126,12 +126,49 @@ struct ContentView: View {
   /// Shows a save panel and saves the audio to the selected location.
   private func saveAudio() {
     let savePanel = NSSavePanel()
-    savePanel.allowedContentTypes = [.wav]
-    savePanel.nameFieldStringValue = "kokoro_speech.wav"
     savePanel.title = "Save Audio"
     savePanel.message = "Choose a location to save the audio file"
+    savePanel.allowedContentTypes = [.wav]
+    savePanel.nameFieldStringValue = "kokoro_speech.wav"
+
+    // Create format picker accessory view
+    let formatPicker = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 150, height: 24), pullsDown: false)
+    formatPicker.addItems(withTitles: ["WAV (Uncompressed)", "M4A (AAC)"])
+    formatPicker.selectItem(at: 0)
+
+    let label = NSTextField(labelWithString: "Format:")
+    label.frame = NSRect(x: 0, y: 0, width: 50, height: 24)
+
+    let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 220, height: 40))
+    label.frame.origin = NSPoint(x: 0, y: 6)
+    formatPicker.frame.origin = NSPoint(x: 55, y: 8)
+    accessoryView.addSubview(label)
+    accessoryView.addSubview(formatPicker)
+
+    savePanel.accessoryView = accessoryView
+
+    // Handle format changes - only update allowedContentTypes, let the system handle extension
+    class FormatPickerTarget: NSObject {
+      let savePanel: NSSavePanel
+
+      init(savePanel: NSSavePanel) {
+        self.savePanel = savePanel
+      }
+
+      @objc func formatChanged(_ sender: NSPopUpButton) {
+        let isWAV = sender.indexOfSelectedItem == 0
+        savePanel.allowedContentTypes = isWAV ? [.wav] : [.mpeg4Audio]
+      }
+    }
+
+    let target = FormatPickerTarget(savePanel: savePanel)
+    formatPicker.target = target
+    formatPicker.action = #selector(FormatPickerTarget.formatChanged(_:))
 
     savePanel.begin { response in
+      // Keep target alive until panel closes
+      _ = target
+
       if response == .OK, let url = savePanel.url {
         do {
           try viewModel.saveAudio(to: url)
