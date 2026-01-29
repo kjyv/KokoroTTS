@@ -15,6 +15,9 @@ struct ContentView: View {
   /// Event monitor for spacebar play/pause
   @State private var eventMonitor: Any?
 
+  /// Tracks which star is being hovered (0 = none)
+  @State private var hoveredStar: Int = 0
+
   /// Returns the flag emoji for a voice based on its two-letter language/gender code prefix.
   /// Format: first letter = language (a=American, b=British), second letter = gender (f=female, m=male)
   private func flagForVoice(_ voice: String) -> String {
@@ -223,19 +226,32 @@ struct ContentView: View {
         HStack(spacing: 4) {
           Text("Rating:")
             .foregroundColor(Color(nsColor: .labelColor))
-          ForEach(1...5, id: \.self) { star in
-            Button {
-              // Toggle: clicking same rating clears it, otherwise set new rating
-              if viewModel.rating(for: viewModel.selectedVoice) == star {
-                viewModel.setRating(0, for: viewModel.selectedVoice)
-              } else {
-                viewModel.setRating(star, for: viewModel.selectedVoice)
+          HStack(spacing: 4) {
+            ForEach(1...5, id: \.self) { star in
+              let isHighlighted = hoveredStar > 0 && star <= hoveredStar
+              Button {
+                // Toggle: clicking same rating clears it, otherwise set new rating
+                if viewModel.rating(for: viewModel.selectedVoice) == star {
+                  viewModel.setRating(0, for: viewModel.selectedVoice)
+                } else {
+                  viewModel.setRating(star, for: viewModel.selectedVoice)
+                }
+              } label: {
+                Image(systemName: isHighlighted ? "star.fill" : "star")
+                  .foregroundColor(isHighlighted ? .yellow : Color(nsColor: .tertiaryLabelColor))
               }
-            } label: {
-              Image(systemName: star <= viewModel.rating(for: viewModel.selectedVoice) ? "star.fill" : "star")
-                .foregroundColor(star <= viewModel.rating(for: viewModel.selectedVoice) ? .yellow : Color(nsColor: .tertiaryLabelColor))
+              .buttonStyle(.plain)
+              .onHover { hovering in
+                if hovering {
+                  hoveredStar = star
+                }
+              }
             }
-            .buttonStyle(.plain)
+          }
+          .onHover { hovering in
+            if !hovering {
+              hoveredStar = 0
+            }
           }
         }
       }
