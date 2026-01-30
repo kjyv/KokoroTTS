@@ -39,9 +39,22 @@
 		F81446412F29657800057215 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F88811502F2AE00000A10A69 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5247E6912E8A5478003F2FA4 /* KokoroTTS */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5247E6942E8A5479003F2FA4 /* KokoroTTS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F88811502F2AE00000A10A69 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
 			path = KokoroTTS;
 			sourceTree = "<group>";
 		};
@@ -174,6 +187,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		F888114A2F2AD6CE00A10A69 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -187,7 +201,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "# Fix SPM framework structure for macOS and re-sign\nFRAMEWORKS_DIR=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\n\nif [ -d \"$FRAMEWORKS_DIR\" ]; then\n    for framework in \"$FRAMEWORKS_DIR\"/*.framework; do\n        if [ -d \"$framework\" ]; then\n            fw_name=$(basename \"$framework\" .framework)\n            binary=\"$framework/$fw_name\"\n\n            # Only process if binary exists at root and Versions/A doesn't\n            if [ -f \"$binary\" ] && [ ! -d \"$framework/Versions\" ]; then\n                echo \"Fixing framework structure for: $fw_name\"\n\n                # Remove existing code signature\n                rm -rf \"$framework/_CodeSignature\"\n\n                # Create versioned structure\n                mkdir -p \"$framework/Versions/A\"\n\n                # Move binary to Versions/A\n                mv \"$binary\" \"$framework/Versions/A/\"\n\n                # Move Resources if exists\n                if [ -d \"$framework/Resources\" ]; then\n                    mv \"$framework/Resources\" \"$framework/Versions/A/\"\n                fi\n\n                # Create symlinks\n                ln -sf \"A\" \"$framework/Versions/Current\"\n                ln -sf \"Versions/Current/$fw_name\" \"$framework/$fw_name\"\n                if [ -d \"$framework/Versions/A/Resources\" ]; then\n                    ln -sf \"Versions/Current/Resources\" \"$framework/Resources\"\n                fi\n\n                # Re-sign the framework\n                /usr/bin/codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp=none --preserve-metadata=identifier,entitlements \"$framework\"\n                echo \"Re-signed: $fw_name\"\n            fi\n        fi\n    done\nfi\n";
+			shellScript = "# Fix SPM framework structure for macOS and re-sign ALL frameworks\nFRAMEWORKS_DIR=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\n\nif [ -d \"$FRAMEWORKS_DIR\" ]; then\n    for framework in \"$FRAMEWORKS_DIR\"/*.framework; do\n        if [ -d \"$framework\" ]; then\n            fw_name=$(basename \"$framework\" .framework)\n            \n            # Find the binary (either at root or in Versions/A)\n            if [ -f \"$framework/$fw_name\" ]; then\n                binary=\"$framework/$fw_name\"\n            elif [ -f \"$framework/Versions/A/$fw_name\" ]; then\n                binary=\"$framework/Versions/A/$fw_name\"\n            else\n                echo \"Warning: No binary found for $fw_name\"\n                continue\n            fi\n\n            # Fix structure if binary is at root (no Versions directory)\n            if [ -f \"$framework/$fw_name\" ] && [ ! -d \"$framework/Versions\" ]; then\n                echo \"Fixing framework structure for: $fw_name\"\n\n                # Remove existing code signature\n                rm -rf \"$framework/_CodeSignature\"\n\n                # Create versioned structure\n                mkdir -p \"$framework/Versions/A\"\n\n                # Move binary to Versions/A\n                mv \"$framework/$fw_name\" \"$framework/Versions/A/\"\n\n                # Move Resources if exists\n                if [ -d \"$framework/Resources\" ]; then\n                    mv \"$framework/Resources\" \"$framework/Versions/A/\"\n                fi\n\n                # Create symlinks\n                ln -sf \"A\" \"$framework/Versions/Current\"\n                ln -sf \"Versions/Current/$fw_name\" \"$framework/$fw_name\"\n                if [ -d \"$framework/Versions/A/Resources\" ]; then\n                    ln -sf \"Versions/Current/Resources\" \"$framework/Resources\"\n                fi\n            fi\n\n            # Re-sign ALL frameworks to ensure consistent signing identity\n            /usr/bin/codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp=none --preserve-metadata=identifier,entitlements \"$framework\"\n            echo \"Re-signed: $fw_name\"\n        fi\n    done\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -385,8 +399,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = F229TX233T;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
 				ENABLE_APP_SANDBOX = YES;
+				"ENABLE_APP_SANDBOX[sdk=macosx*]" = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
+				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = NO;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

@@ -1,4 +1,5 @@
 import AVFoundation
+import AudioToolbox
 import MLX
 import SwiftUI
 import KokoroSwift
@@ -198,6 +199,18 @@ final class KokoroTTSModel: ObservableObject {
 
     // Connect the player node to the audio engine's mixer
     audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: format)
+
+    // Request a larger buffer size to reduce audio overload warnings during heavy CPU load
+    let outputUnit = audioEngine.outputNode.audioUnit!
+    var bufferSize: UInt32 = 2048
+    AudioUnitSetProperty(
+      outputUnit,
+      kAudioDevicePropertyBufferFrameSize,
+      kAudioUnitScope_Global,
+      0,
+      &bufferSize,
+      UInt32(MemoryLayout<UInt32>.size)
+    )
 
     // Start the audio engine
     do {
