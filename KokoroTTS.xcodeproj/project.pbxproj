@@ -40,7 +40,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		F88811502F2AE00000A10A69 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		F88811502F2AE00000A10A69 /* Exceptions for "KokoroTTS" folder in "KokoroTTS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -53,7 +53,7 @@
 		5247E6942E8A5479003F2FA4 /* KokoroTTS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				F88811502F2AE00000A10A69 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+				F88811502F2AE00000A10A69 /* Exceptions for "KokoroTTS" folder in "KokoroTTS" target */,
 			);
 			path = KokoroTTS;
 			sourceTree = "<group>";
@@ -370,7 +370,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sb.KokoroTTS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -422,7 +422,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sb.KokoroTTS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

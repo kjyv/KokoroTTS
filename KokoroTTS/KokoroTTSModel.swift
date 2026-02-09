@@ -250,16 +250,51 @@ final class KokoroTTSModel: ObservableObject {
 
         print("Processing chunk \(index + 1)/\(chunks.count): \"\(chunk.prefix(50))...\"")
 
-        // Generate audio using the selected voice
-        guard let (audio, tokenArray) = try? self.kokoroTTSEngine.generateAudio(
-          voice: voice,
-          language: language,
-          text: chunk,
-          speed: speed
-        ) else {
-          print("Failed to generate audio for chunk \(index + 1)")
+        // Generate audio, re-splitting if the chunk exceeds the token limit
+        let result: ([Float], [MToken]?)
+        do {
+          result = try self.kokoroTTSEngine.generateAudio(
+            voice: voice,
+            language: language,
+            text: chunk,
+            speed: speed
+          )
+        } catch KokoroTTS.KokoroTTSError.tooManyTokens {
+          // Chunk exceeded 510 tokens — split it further and retry each part
+          print("Chunk \(index + 1) exceeded token limit (\(chunk.count) chars), re-splitting...")
+          let subChunks = self.splitLongSentence(chunk)
+          var combinedAudio: [Float] = []
+          var combinedTokens: [MToken] = []
+          var subFailed = false
+          for (subIndex, subChunk) in subChunks.enumerated() {
+            guard !self.shouldCancelGeneration else { break }
+            do {
+              let (subAudio, subTokens) = try self.kokoroTTSEngine.generateAudio(
+                voice: voice,
+                language: language,
+                text: subChunk,
+                speed: speed
+              )
+              combinedAudio.append(contentsOf: subAudio)
+              if let subTokens {
+                combinedTokens.append(contentsOf: subTokens)
+              }
+            } catch {
+              print("Failed to generate audio for sub-chunk \(subIndex + 1)/\(subChunks.count): \(error)")
+              subFailed = true
+            }
+          }
+          if combinedAudio.isEmpty && subFailed {
+            print("All sub-chunks failed for chunk \(index + 1)")
+            continue
+          }
+          result = (combinedAudio, combinedTokens.isEmpty ? nil : combinedTokens)
+        } catch {
+          print("Failed to generate audio for chunk \(index + 1): \(error)")
           continue
         }
+
+        let (audio, tokenArray) = result
 
         let chunkAudioLength = Double(audio.count) / sampleRate
         let currentTotalLength = totalAudioLength

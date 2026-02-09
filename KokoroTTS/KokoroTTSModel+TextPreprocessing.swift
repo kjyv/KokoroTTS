@@ -83,8 +83,14 @@ extension KokoroTTSModel {
     return result
   }
 
+  /// Approximate max character length for a chunk, used as a heuristic to avoid exceeding the
+  /// model's 510-token limit. Each text character typically expands to 2-4 phoneme tokens,
+  /// so 450 characters is a conservative estimate that leaves room for expansion.
+  private static let maxChunkCharacterLength = 450
+
   /// Splits text into chunks of sentences for processing within token limits.
   /// Also splits on headlines (lines followed by empty lines).
+  /// Long sentences that might exceed model token limits are further split at clause boundaries.
   /// - Parameters:
   ///   - text: The text to split
   ///   - sentencesPerChunk: Maximum number of sentences per chunk
@@ -159,16 +165,112 @@ extension KokoroTTSModel {
         sentences.append(remaining)
       }
 
-      // Group sentences into chunks
+      // Group sentences into chunks, ensuring no chunk exceeds the character limit
       for i in stride(from: 0, to: sentences.count, by: sentencesPerChunk) {
         let end = min(i + sentencesPerChunk, sentences.count)
         let chunk = sentences[i..<end].joined(separator: " ")
         if !chunk.isEmpty {
-          chunks.append(chunk)
+          if chunk.count > Self.maxChunkCharacterLength {
+            // Chunk is too long — split individual sentences at clause boundaries
+            for j in i..<end {
+              let subChunks = splitLongSentence(sentences[j])
+              chunks.append(contentsOf: subChunks)
+            }
+          } else {
+            chunks.append(chunk)
+          }
         }
       }
     }
 
     return chunks.isEmpty ? [text.replacingOccurrences(of: "\n", with: " ")] : chunks
+  }
+
+  /// Splits a long sentence at clause boundaries to keep it within token limits.
+  /// Tries splitting at semicolons first, then commas, then mid-point whitespace as a last resort.
+  /// - Parameter sentence: A single sentence that may be too long
+  /// - Returns: Array of sub-chunks, each ideally under the character limit
+  func splitLongSentence(_ sentence: String) -> [String] {
+    let maxLen = Self.maxChunkCharacterLength
+    if sentence.count <= maxLen {
+      return [sentence]
+    }
+
+    // Try splitting at clause boundaries: semicolons, then commas/colons, then conjunctions
+    let clauseDelimiters = [
+      "(?<=;)\\s+",                    // after semicolons
+      "(?<=,)\\s+",                    // after commas
+      "(?<=:)\\s+",                    // after colons
+      "\\s+(?=\\b(?:and|but|or|yet|so|which|that|because|although|while|when|where|if)\\b)"  // before conjunctions
+    ]
+
+    for pattern in clauseDelimiters {
+      let parts = splitByPattern(sentence, pattern: pattern)
+      if parts.count > 1 {
+        // Recombine parts into sub-chunks that fit under the limit
+        let subChunks = recombineParts(parts, maxLength: maxLen)
+        // Recursively split any sub-chunks that are still too long
+        return subChunks.flatMap { splitLongSentence($0) }
+      }
+    }
+
+    // Last resort: split at the nearest whitespace to the midpoint
+    let mid = sentence.index(sentence.startIndex, offsetBy: sentence.count / 2)
+    // Search for whitespace around the midpoint
+    if let spaceRange = sentence.rangeOfCharacter(from: .whitespaces, range: mid..<sentence.endIndex) ??
+       sentence.rangeOfCharacter(from: .whitespaces, options: .backwards, range: sentence.startIndex..<mid) {
+      let first = String(sentence[sentence.startIndex..<spaceRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+      let second = String(sentence[spaceRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+      var result: [String] = []
+      if !first.isEmpty { result.append(contentsOf: splitLongSentence(first)) }
+      if !second.isEmpty { result.append(contentsOf: splitLongSentence(second)) }
+      return result
+    }
+
+    // Absolutely no split point found — return as-is (will be attempted by the engine)
+    return [sentence]
+  }
+
+  /// Splits text using a regex pattern.
+  private func splitByPattern(_ text: String, pattern: String) -> [String] {
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return [text] }
+    let range = NSRange(text.startIndex..., in: text)
+    var parts: [String] = []
+    var lastEnd = text.startIndex
+
+    regex.enumerateMatches(in: text, range: range) { match, _, _ in
+      if let match = match, let matchRange = Range(match.range, in: text) {
+        let part = String(text[lastEnd..<matchRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+        if !part.isEmpty {
+          parts.append(part)
+        }
+        lastEnd = matchRange.upperBound
+      }
+    }
+
+    let remaining = String(text[lastEnd...]).trimmingCharacters(in: .whitespaces)
+    if !remaining.isEmpty {
+      parts.append(remaining)
+    }
+    return parts
+  }
+
+  /// Recombines small parts into chunks that fit under a maximum length.
+  private func recombineParts(_ parts: [String], maxLength: Int) -> [String] {
+    var chunks: [String] = []
+    var current = ""
+    for part in parts {
+      let combined = current.isEmpty ? part : current + " " + part
+      if combined.count > maxLength && !current.isEmpty {
+        chunks.append(current)
+        current = part
+      } else {
+        current = combined
+      }
+    }
+    if !current.isEmpty {
+      chunks.append(current)
+    }
+    return chunks
   }
 }
