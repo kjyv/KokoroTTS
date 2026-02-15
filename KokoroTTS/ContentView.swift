@@ -494,6 +494,18 @@ struct ContentView: View {
     .onAppear {
       // Set up event monitor for spacebar play/pause and Escape to unfocus
       eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        // Check for Cmd+V — detect headline formatting from RTF on the clipboard
+        // and insert empty lines after headlines for proper TTS pauses.
+        // Only intercepts when headlines are detected; normal paste passes through.
+        if event.modifierFlags.contains(.command),
+           event.charactersIgnoringModifiers == "v",
+           let firstResponder = NSApp.keyWindow?.firstResponder,
+           firstResponder is NSTextView,
+           let processedText = PasteboardHelper.extractTextPreservingHeadlines(from: .general) {
+          viewModel.inputText = processedText
+          return nil
+        }
+
         // Check for Escape key (keyCode 53) - unfocus text editor
         if event.keyCode == 53 {
           isTextEditorFocused = false

@@ -26,8 +26,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Register this object as a service provider
     NSApp.servicesProvider = self
 
-    // Register the types we accept for services
-    NSApp.registerServicesMenuSendTypes([.string], returnTypes: [])
+    // Register the types we accept for services (RTF for headline detection, string as fallback)
+    NSApp.registerServicesMenuSendTypes([.rtf, .string], returnTypes: [])
 
     // Update the Services menu
     NSUpdateDynamicServices()
@@ -54,11 +54,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       savedWindowFrames[window] = window.frame
     }
 
-    // Get the string from the pasteboard
-    guard let items = pboard.pasteboardItems,
-          let item = items.first,
-          let text = item.string(forType: .string) ?? pboard.string(forType: .string),
-          !text.isEmpty else {
+    // Extract text from pasteboard (tries RTF headline detection first, then plain text)
+    guard let text = PasteboardHelper.extractText(from: pboard) else {
       error.pointee = "No text was provided" as NSString
       return
     }

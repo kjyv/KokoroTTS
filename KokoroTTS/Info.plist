@@ -28,6 +28,7 @@
 			<string>KokoroTTS</string>
 			<key>NSSendTypes</key>
 			<array>
+				<string>NSRTFPboardType</string>
 				<string>NSStringPboardType</string>
 				<string>public.utf8-plain-text</string>
 			</array>
