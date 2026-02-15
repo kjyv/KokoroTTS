@@ -200,17 +200,17 @@ struct ContentView: View {
   /// Shows a save panel and saves the audio to the selected location.
   private func saveAudio() {
     let savePanel = NSSavePanel()
-    savePanel.title = "Save Audio"
-    savePanel.message = "Choose a location to save the audio file"
+    savePanel.title = String(localized: "Save Audio")
+    savePanel.message = String(localized: "Choose a location to save the audio file")
     savePanel.allowedContentTypes = [.wav]
     savePanel.nameFieldStringValue = "kokoro_speech.wav"
 
     // Create format picker accessory view
     let formatPicker = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 150, height: 24), pullsDown: false)
-    formatPicker.addItems(withTitles: ["WAV (Uncompressed)", "M4A (AAC)"])
+    formatPicker.addItems(withTitles: [String(localized: "WAV (Uncompressed)"), String(localized: "M4A (AAC)")])
     formatPicker.selectItem(at: 0)
 
-    let label = NSTextField(labelWithString: "Format:")
+    let label = NSTextField(labelWithString: String(localized: "Format:"))
     label.frame = NSRect(x: 0, y: 0, width: 50, height: 24)
 
     let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 220, height: 40))
@@ -249,7 +249,7 @@ struct ContentView: View {
         } catch {
           // Show error alert
           let alert = NSAlert()
-          alert.messageText = "Failed to save audio"
+          alert.messageText = String(localized: "Failed to save audio")
           alert.informativeText = error.localizedDescription
           alert.alertStyle = .warning
           alert.runModal()

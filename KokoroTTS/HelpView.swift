@@ -87,13 +87,13 @@ struct HelpView: View {
     .frame(width: 500, height: 600)
   }
 
-  private func sectionHeader(_ title: String) -> some View {
+  private func sectionHeader(_ title: LocalizedStringKey) -> some View {
     Text(title)
       .font(.title2)
       .fontWeight(.semibold)
   }
 
-  private func featureRow(_ title: String, description: String) -> some View {
+  private func featureRow(_ title: LocalizedStringKey, description: LocalizedStringKey) -> some View {
     HStack(alignment: .top, spacing: 8) {
       Image(systemName: "checkmark.circle.fill")
         .foregroundColor(.accentColor)

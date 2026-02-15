@@ -14,7 +14,7 @@ struct KokoroTestApp: App {
     .defaultSize(width: 550, height: 550)
     .commands {
       CommandGroup(replacing: .appInfo) {
-        Button("About Kokoro TTS") {
+        Button(String(localized: "About Kokoro TTS")) {
           NSApplication.shared.orderFrontStandardAboutPanel(options: [
             .applicationIcon: NSApp.applicationIconImage as Any,
             .applicationName: "Kokoro TTS",
@@ -46,7 +46,7 @@ struct HelpMenuButton: View {
   @Environment(\.openWindow) private var openWindow
 
   var body: some View {
-    Button("Kokoro TTS Help") {
+    Button(String(localized: "Kokoro TTS Help")) {
       openWindow(id: "help")
     }
     .keyboardShortcut("?", modifiers: .command)
