@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// The main application entry point for the Kokoro TTS test app.
-/// This app demonstrates the Kokoro text-to-speech engine with MLX acceleration.
+/// The main application entry point for the Kokoro TTS app.
 @main
 struct KokoroTestApp: App {
   /// The app delegate that handles macOS Services integration and owns the model

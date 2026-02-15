@@ -77,7 +77,38 @@ struct ContentView: View {
     return String(format: "%d:%02d", minutes, seconds)
   }
 
-  /// Builds an AttributedString with the current word highlighted, preserving original formatting
+  /// Normalizes Unicode quotation marks to ASCII equivalents so token text from the TTS engine
+  /// can be matched against the original input even when it contains smart quotes.
+  private static func normalizeQuotes(_ text: String) -> String {
+    text.replacingOccurrences(of: "\u{2018}", with: "'")
+      .replacingOccurrences(of: "\u{2019}", with: "'")
+      .replacingOccurrences(of: "\u{201C}", with: "\"")
+      .replacingOccurrences(of: "\u{201D}", with: "\"")
+  }
+
+  /// Finds the next whole-word occurrence of `word` in `text` starting from `start`.
+  /// Prevents matching substrings inside longer words (e.g., "or" inside "for").
+  private func findWholeWord(_ word: String, in text: String, from start: String.Index) -> Range<String.Index>? {
+    var searchFrom = start
+    while let range = text.range(of: word, range: searchFrom..<text.endIndex) {
+      let beforeChar = range.lowerBound == text.startIndex ? nil : text[text.index(before: range.lowerBound)]
+      let afterChar = range.upperBound == text.endIndex ? nil : text[range.upperBound]
+      let beforeOK = beforeChar == nil || !(beforeChar!.isLetter || beforeChar!.isNumber)
+      let afterOK = afterChar == nil || !(afterChar!.isLetter || afterChar!.isNumber)
+      if beforeOK && afterOK {
+        return range
+      }
+      searchFrom = range.upperBound
+      if searchFrom >= text.endIndex { break }
+    }
+    return nil
+  }
+
+  /// Builds an AttributedString with the current word highlighted, preserving original formatting.
+  ///
+  /// Tokens come from preprocessed text (where parentheticals become dashes, etc.), so matching
+  /// uses whole-word search with Unicode normalization to handle mismatches. Characters between
+  /// spoken tokens (like parentheses) are filled in as spoken via gap-filling.
   private func highlightedText() -> AttributedString {
     let originalText = viewModel.inputText
     var result = AttributedString(originalText)
@@ -85,33 +116,76 @@ struct ContentView: View {
     // Default everything to dimmed (not yet spoken)
     result.foregroundColor = Color(nsColor: .tertiaryLabelColor)
 
-    // Find each token in the original text and apply styling
-    var searchStart = originalText.startIndex
+    // Normalize quotes for matching (smart quotes -> ASCII) since TTS may normalize them.
+    // This preserves character count so we can maintain parallel indices.
+    let searchText = Self.normalizeQuotes(originalText)
+
+    // Maintain parallel positions in both original and normalized text
+    var normSearchStart = searchText.startIndex
+    var origSearchStart = originalText.startIndex
+
+    // Track end of last spoken region for gap filling
+    var lastSpokenOrigEnd: String.Index?
 
     for (index, token) in viewModel.allTokens.enumerated() {
       // Skip space tokens added between chunks
       if token.text == " " { continue }
 
-      // Find this token in the original text
-      guard let range = originalText.range(of: token.text, range: searchStart..<originalText.endIndex) else {
+      let normalizedToken = Self.normalizeQuotes(token.text)
+
+      // Use whole-word matching for tokens containing letters/numbers (prevents "or" matching
+      // inside "for"). For punctuation-only tokens (quotes, commas, etc.), use simple substring
+      // matching since they naturally appear adjacent to letters.
+      let tokenHasWordChars = normalizedToken.contains { $0.isLetter || $0.isNumber }
+      let range: Range<String.Index>?
+      if tokenHasWordChars {
+        range = findWholeWord(normalizedToken, in: searchText, from: normSearchStart)
+      } else {
+        range = searchText.range(of: normalizedToken, range: normSearchStart..<searchText.endIndex)
+      }
+
+      guard let range else {
+        // Token not found - likely a preprocessing artifact (e.g., "-" from converted parenthetical)
+        // or a Unicode mismatch. Skip it; gap-filling will color the skipped area when the next
+        // spoken token is found.
         continue
       }
 
-      // Convert String range to AttributedString range
-      let attrRange = Range<AttributedString.Index>(range, in: result)!
+      // Map the match position to the original text using parallel character offsets
+      let skipCount = searchText.distance(from: normSearchStart, to: range.lowerBound)
+      let tokenLength = searchText.distance(from: range.lowerBound, to: range.upperBound)
+      let origMatchStart = originalText.index(origSearchStart, offsetBy: skipCount)
+      let origMatchEnd = originalText.index(origMatchStart, offsetBy: tokenLength)
+      let origRange = origMatchStart..<origMatchEnd
 
-      if index == viewModel.currentTokenIndex {
-        // Highlight the current word
-        result[attrRange].backgroundColor = Color.accentColor
-        result[attrRange].foregroundColor = Color.white
-      } else if let start = token.start_ts, start <= viewModel.currentTime {
-        // Already spoken - normal color
-        result[attrRange].foregroundColor = Color(nsColor: .labelColor)
+      let isCurrent = index == viewModel.currentTokenIndex
+      let isSpoken = token.start_ts.map { $0 <= viewModel.currentTime } ?? false
+
+      if isCurrent || isSpoken {
+        // Fill gap: color characters between last spoken position and this token as spoken.
+        // This handles parentheses, preprocessing artifacts, and any skipped characters.
+        if let lastEnd = lastSpokenOrigEnd, lastEnd < origMatchStart {
+          if let gapAttrRange = Range<AttributedString.Index>(lastEnd..<origMatchStart, in: result) {
+            result[gapAttrRange].foregroundColor = Color(nsColor: .labelColor)
+          }
+        }
+        lastSpokenOrigEnd = origMatchEnd
       }
-      // Not yet spoken tokens keep the default dimmed color
 
-      // Move search position forward to avoid matching the same word twice
-      searchStart = range.upperBound
+      if let attrRange = Range<AttributedString.Index>(origRange, in: result) {
+        if isCurrent {
+          // Highlight the current word
+          result[attrRange].backgroundColor = Color.accentColor
+          result[attrRange].foregroundColor = Color.white
+        } else if isSpoken {
+          // Already spoken - normal color
+          result[attrRange].foregroundColor = Color(nsColor: .labelColor)
+        }
+      }
+
+      // Move search positions forward
+      normSearchStart = range.upperBound
+      origSearchStart = origMatchEnd
     }
 
     return result
