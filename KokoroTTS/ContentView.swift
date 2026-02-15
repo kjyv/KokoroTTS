@@ -18,6 +18,12 @@ struct ContentView: View {
   /// Tracks which star is being hovered (0 = none)
   @State private var hoveredStar: Int = 0
 
+  /// Height of the scroll view's visible frame, used for auto-scroll threshold
+  @State private var scrollViewHeight: CGFloat = 0
+
+  /// Prevents re-triggering auto-scroll during an ongoing scroll animation
+  @State private var recentlyScrolled = false
+
   /// Returns the flag emoji for a voice based on its two-letter language/gender code prefix.
   /// Format: first letter = language (a=American, b=British), second letter = gender (f=female, m=male)
   private func flagForVoice(_ voice: String) -> String {
@@ -86,6 +92,25 @@ struct ContentView: View {
       .replacingOccurrences(of: "\u{201D}", with: "\"")
   }
 
+  /// Finds a non-word token in text, considering alternatives created by preprocessing.
+  /// Preprocessing converts `(…)` → `- … -` and `word/word` → `word - word`, so a `-`
+  /// token may correspond to `(`, `)`, or `/` in the original text. Returns the closest match.
+  private func findNonWordToken(_ token: String, in text: String, from start: String.Index) -> Range<String.Index>? {
+    let searchRange = start..<text.endIndex
+    var best = text.range(of: token, range: searchRange)
+
+    if token == "-" {
+      for alt in ["(", ")", "/"] {
+        if let altRange = text.range(of: alt, range: searchRange),
+           best == nil || altRange.lowerBound < best!.lowerBound {
+          best = altRange
+        }
+      }
+    }
+
+    return best
+  }
+
   /// Finds the next whole-word occurrence of `word` in `text` starting from `start`.
   /// Prevents matching substrings inside longer words (e.g., "or" inside "for").
   private func findWholeWord(_ word: String, in text: String, from start: String.Index) -> Range<String.Index>? {
@@ -141,7 +166,7 @@ struct ContentView: View {
       if tokenHasWordChars {
         range = findWholeWord(normalizedToken, in: searchText, from: normSearchStart)
       } else {
-        range = searchText.range(of: normalizedToken, range: normSearchStart..<searchText.endIndex)
+        range = findNonWordToken(normalizedToken, in: searchText, from: normSearchStart)
       }
 
       guard let range else {
@@ -189,6 +214,50 @@ struct ContentView: View {
     }
 
     return result
+  }
+
+  /// Returns the input text up to and including the current token, for measuring
+  /// the highlight's vertical position within the scroll view. Uses the same sequential
+  /// matching logic as `highlightedText()` to find the character offset.
+  private func textUpToCurrentToken() -> String {
+    let text = viewModel.inputText
+    guard viewModel.currentTokenIndex >= 0,
+          viewModel.currentTokenIndex < viewModel.allTokens.count else {
+      return ""
+    }
+
+    let searchText = Self.normalizeQuotes(text)
+    var searchStart = searchText.startIndex
+    var origStart = text.startIndex
+
+    for (index, token) in viewModel.allTokens.enumerated() {
+      if token.text == " " { continue }
+
+      let normalized = Self.normalizeQuotes(token.text)
+      let hasWords = normalized.contains { $0.isLetter || $0.isNumber }
+
+      let range: Range<String.Index>?
+      if hasWords {
+        range = findWholeWord(normalized, in: searchText, from: searchStart)
+      } else {
+        range = findNonWordToken(normalized, in: searchText, from: searchStart)
+      }
+
+      guard let range else { continue }
+
+      let skip = searchText.distance(from: searchStart, to: range.lowerBound)
+      let len = searchText.distance(from: range.lowerBound, to: range.upperBound)
+      let origEnd = text.index(origStart, offsetBy: skip + len)
+
+      if index >= viewModel.currentTokenIndex {
+        return String(text[..<origEnd])
+      }
+
+      searchStart = range.upperBound
+      origStart = origEnd
+    }
+
+    return text
   }
 
   /// Removes focus from the text editor so spacebar can control playback.
@@ -264,11 +333,47 @@ struct ContentView: View {
       Group {
         if viewModel.hasAudio && !viewModel.allTokens.isEmpty && !isEditingText {
           // Show highlighted text during playback or when paused (until user clicks to edit)
-          ScrollView {
-            Text(highlightedText())
-              .font(.body)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(.horizontal, 5)
+          ScrollViewReader { proxy in
+            ScrollView {
+              ZStack(alignment: .topLeading) {
+                Text(highlightedText())
+                  .font(.body)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(.horizontal, 5)
+
+                // Invisible copy of text up to the current token, used only
+                // to position the scroll anchor at the current highlight
+                Text(textUpToCurrentToken())
+                  .font(.body)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(.horizontal, 5)
+                  .hidden()
+                  .overlay(alignment: .bottomLeading) {
+                    Color.clear
+                      .frame(width: 1, height: 1)
+                      .id("highlightAnchor")
+                      .onGeometryChange(for: CGFloat.self) { geo in
+                        geo.frame(in: .named("playbackScroll")).maxY
+                      } action: { y in
+                        if !recentlyScrolled && scrollViewHeight > 0 && y > scrollViewHeight * 0.75 {
+                          recentlyScrolled = true
+                          withAnimation(.easeInOut(duration: 0.3)) {
+                            proxy.scrollTo("highlightAnchor", anchor: UnitPoint(x: 0.5, y: 0.1))
+                          }
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            recentlyScrolled = false
+                          }
+                        }
+                      }
+                  }
+              }
+            }
+            .coordinateSpace(name: "playbackScroll")
+            .onGeometryChange(for: CGFloat.self) { geo in
+              geo.size.height
+            } action: { height in
+              scrollViewHeight = height
+            }
           }
           .padding(8)
           .background(Color(nsColor: .textBackgroundColor))
