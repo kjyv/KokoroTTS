@@ -1,17 +1,17 @@
 # KokoroTTS
 
-Small macOS application for the Kokoro TTS (Text-to-Speech) model, allowing high-quality offline TTS.
-Integrates as a macOS service to speak selected text quickly.
+Small macOS application for Text-to-Speech using the the Kokoro TTS model, allowing high-quality offline TTS.
+Integrates as a macOS service to speak selected text quickly, optionally using a global hotkey.
 
 ![Screenshot](Screenshot.png)
 
 ## Usage
 
 Select any text in any application and select "Speak with Kokoro" from the context menu. Or press **⌘⇧P** (Command+Shift+P) to speak it.
-To change the keyboard shortcut, go to **System Settings → Keyboard → Keyboard Shortcuts → Services → Text → Speak with Kokoro**.
+You can also change the keyboard shortcut, for that go to **System Settings → Keyboard → Keyboard Shortcuts → Services → Text → Speak with Kokoro**.
 This item will only be created after you've started the app for the first time.
 
-Alternatively, paste text directly into the app's text field and press play. The generated audio can also be saved to a file.
+Alternatively, copy and paste text directly into the app's text field and press play. The generated audio can also be saved to a file.
 
 ## Supported Platforms
 
@@ -49,6 +49,7 @@ Otherwise cloning and running the application is done as any other app:
    git clone https://github.com/kjyv/KokoroTTS.git
    cd KokoroTTS
    ```
+   (if this doesn't download the model files because of LFS issues, you can also download the files manually from Github)
 
 2. **Verify model file**: Ensure the model file was downloaded correctly:
    ```bash
