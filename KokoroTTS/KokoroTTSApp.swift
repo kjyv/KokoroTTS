@@ -7,7 +7,7 @@ struct KokoroTestApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
   var body: some Scene {
-    WindowGroup {
+    Window("Kokoro TTS", id: "main") {
       ContentView(viewModel: appDelegate.model)
         .frame(minWidth: 350, minHeight: 300)
     }
