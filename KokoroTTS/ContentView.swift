@@ -299,8 +299,23 @@ struct ContentView: View {
       }
 
       @objc func formatChanged(_ sender: NSPopUpButton) {
-        let isWAV = sender.indexOfSelectedItem == 0
-        savePanel.allowedContentTypes = isWAV ? [.wav] : [.mpeg4Audio]
+        let exportFormat: KokoroTTSModel.AudioExportFormat = sender.indexOfSelectedItem == 0 ? .wav : .m4a
+        savePanel.allowedContentTypes = exportFormat == .wav ? [.wav] : [.mpeg4Audio]
+
+        // Strip any known audio extension (not just the literal last component) so
+        // the base name is recovered reliably regardless of the current suffix.
+        let knownExtensions: Set<String> = ["wav", "m4a", "mp4", "aac"]
+        let current = savePanel.nameFieldStringValue as NSString
+        let baseName = knownExtensions.contains(current.pathExtension.lowercased())
+          ? current.deletingPathExtension
+          : savePanel.nameFieldStringValue
+
+        // Defer the rename to the next run loop turn: changing allowedContentTypes
+        // triggers the panel's own asynchronous extension rewrite, which would
+        // otherwise clobber a synchronous update here.
+        DispatchQueue.main.async {
+          self.savePanel.nameFieldStringValue = "\(baseName).\(exportFormat.fileExtension)"
+        }
       }
     }
 
@@ -313,8 +328,15 @@ struct ContentView: View {
       _ = target
 
       if response == .OK, let url = savePanel.url {
+        // Drive the codec choice from the picker, not the filename. The save
+        // panel may leave a stale extension in place when the format is switched,
+        // so we also normalize the extension to match the chosen container.
+        let exportFormat: KokoroTTSModel.AudioExportFormat = formatPicker.indexOfSelectedItem == 0 ? .wav : .m4a
+        let outputURL = url.pathExtension.lowercased() == exportFormat.fileExtension
+          ? url
+          : url.deletingPathExtension().appendingPathExtension(exportFormat.fileExtension)
         do {
-          try viewModel.saveAudio(to: url)
+          try viewModel.saveAudio(to: outputURL, as: exportFormat)
         } catch {
           // Show error alert
           let alert = NSAlert()

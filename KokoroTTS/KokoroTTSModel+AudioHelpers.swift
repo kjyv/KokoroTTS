@@ -5,19 +5,39 @@ import Foundation
 // MARK: - Audio Helpers
 
 extension KokoroTTSModel {
+  /// The audio container/codec to write when saving.
+  enum AudioExportFormat {
+    /// Uncompressed linear PCM in a WAV container.
+    case wav
+    /// AAC-compressed audio in an MPEG-4 (.m4a) container.
+    case m4a
+
+    /// The file extension that matches this format's container.
+    var fileExtension: String {
+      switch self {
+      case .wav: return "wav"
+      case .m4a: return "m4a"
+      }
+    }
+  }
+
   /// Saves the current audio to a file.
-  /// - Parameter url: The destination URL for the audio file
+  /// - Parameters:
+  ///   - url: The destination URL for the audio file
+  ///   - exportFormat: The container/codec to use. Determines whether the audio
+  ///     is written as uncompressed PCM (WAV) or AAC-compressed (M4A). This is
+  ///     passed explicitly rather than inferred from the URL extension, because
+  ///     the save panel does not reliably rewrite a pre-existing extension.
   /// - Throws: An error if saving fails
-  func saveAudio(to url: URL) throws {
+  func saveAudio(to url: URL, as exportFormat: AudioExportFormat) throws {
     guard !audioSamples.isEmpty, let format = audioFormat else {
       throw NSError(domain: "KokoroTTS", code: 1, userInfo: [NSLocalizedDescriptionKey: "No audio to save"])
     }
 
-    let fileExtension = url.pathExtension.lowercased()
-
-    if fileExtension == "m4a" {
+    switch exportFormat {
+    case .m4a:
       try saveAsM4A(to: url, format: format)
-    } else {
+    case .wav:
       try saveAsWAV(to: url, format: format)
     }
   }
