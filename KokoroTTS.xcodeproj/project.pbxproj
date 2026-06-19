@@ -165,6 +165,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				52FE05EF2EABBB5A0018FCF1 /* XCRemoteSwiftPackageReference "kokoro-ios" */,
+				52FE06AA2EABBB5A0018FCF1 /* XCRemoteSwiftPackageReference "MisakiSwift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5247E6932E8A5478003F2FA4 /* Products */;
@@ -476,6 +477,14 @@
 				version = 1.0.11;
 			};
 		};
+		52FE06AA2EABBB5A0018FCF1 /* XCRemoteSwiftPackageReference "MisakiSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jlund/MisakiSwift";
+			requirement = {
+				kind = revision;
+				revision = a9060ba03c3c70eb2dd04f8326ad1d1eeced1303;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -485,6 +494,7 @@
 		};
 		52FE05CD2EAA938B0018FCF1 /* MisakiSwift */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 52FE06AA2EABBB5A0018FCF1 /* XCRemoteSwiftPackageReference "MisakiSwift" */;
 			productName = MisakiSwift;
 		};
 		52FE05F02EABBB5A0018FCF1 /* KokoroSwift */ = {
