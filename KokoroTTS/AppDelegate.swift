@@ -43,21 +43,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDele
     // Update the Services menu
     NSUpdateDynamicServices()
 
-    // Set frame autosave name for the main window and become its delegate
-    DispatchQueue.main.async { [self] in
-      if let window = NSApp.windows.first {
-        window.setFrameAutosaveName("KokoroTTSMainWindow")
-        window.delegate = self
-        mainWindow = window
-      }
-    }
-
     // Set up menu bar icon
     setupStatusItem()
 
-    // Apply saved dock visibility preference
-    if UserDefaults.standard.bool(forKey: hideFromDockKey) {
-      NSApp.setActivationPolicy(.accessory)
+    // Apply saved dock visibility preference. Set the policy *explicitly* in both cases:
+    // LaunchServices remembers the previous run's activation policy, so a launch that
+    // inherits the accessory state would otherwise stay accessory forever (no dock icon,
+    // no activated window) even when the preference is off. Forcing .regular here makes
+    // startup deterministic regardless of inherited state.
+    let hideFromDock = UserDefaults.standard.bool(forKey: hideFromDockKey)
+    NSApp.setActivationPolicy(hideFromDock ? .accessory : .regular)
+
+    // Resolve the main window (sets its autosave name and delegate as a side effect),
+    // and when visible in the Dock, make sure it's actually shown and frontmost — an
+    // accessory-inherited launch may have left it unactivated.
+    DispatchQueue.main.async { [self] in
+      let window = resolveMainWindow()
+      if !hideFromDock {
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+      }
     }
   }
 
@@ -81,10 +86,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDele
   // MARK: - Menu Bar
 
   private func setupStatusItem() {
-    statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    // variableLength sizes the item to its content; squareLength would force a full
+    // menu-bar-height-wide square, leaving wide empty padding around a narrow glyph.
+    statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+
+    // Force the icon visible. NSStatusItem persists its visibility state, so a
+    // previously-hidden item (e.g. trimmed from a crowded menu bar) would otherwise
+    // stay hidden on relaunch — which, with the Dock icon disabled, locks the user
+    // out of the window entirely.
+    statusItem?.isVisible = true
 
     if let button = statusItem?.button {
-      button.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Kokoro TTS")
+      // A filled speech bubble echoes the Dock icon's motif (its white bubble) while being a
+      // proper menu-bar glyph: SF Symbols are template images, so this renders monochrome and
+      // tints with the menu bar (light/dark), and fills the space instead of shrinking like a
+      // margined app icon would.
+      let image = NSImage(systemSymbolName: "message.fill", accessibilityDescription: "Kokoro TTS")
+      image?.isTemplate = true
+      button.image = image
     }
 
     let menu = NSMenu()
@@ -113,7 +132,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDele
 
     menu.addItem(NSMenuItem.separator())
 
-    let exitItem = NSMenuItem(title: "Quit KokoroTTS", action: #selector(exitApp), keyEquivalent: "q")
+    // No key equivalent: in a status-bar menu the shortcut only fires while the menu is
+    // already open, but it forces AppKit to reserve a wide shortcut column across the whole
+    // menu — making the menu noticeably wider than its content needs.
+    let exitItem = NSMenuItem(title: "Quit KokoroTTS", action: #selector(exitApp), keyEquivalent: "")
     exitItem.target = self
     menu.addItem(exitItem)
   }
@@ -122,8 +144,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDele
     rebuildMenu(menu)
   }
 
+  /// Finds the app's main content window, re-resolving if the cached handle is stale or nil.
+  ///
+  /// The app declares two `Window` scenes ("main" and "help"), so capturing
+  /// `NSApp.windows.first` once at launch is unreliable — it can grab the wrong window
+  /// or none at all. We match by title (the Help window is "Kokoro TTS Help") and fall
+  /// back to the first main-capable, non-Help window. This is what keeps "Show Window"
+  /// and the relaunch-from-Finder reopen path working when the Dock icon is hidden.
+  private func resolveMainWindow() -> NSWindow? {
+    if let window = mainWindow, NSApp.windows.contains(window) {
+      return window
+    }
+
+    let window = NSApp.windows.first { $0.title == "Kokoro TTS" }
+      ?? NSApp.windows.first { $0.canBecomeMain && $0.title != "Kokoro TTS Help" }
+
+    if let window {
+      window.setFrameAutosaveName("KokoroTTSMainWindow")
+      window.delegate = self
+      mainWindow = window
+    }
+    return window
+  }
+
   @objc private func showMainWindow() {
-    guard let window = mainWindow else { return }
+    guard let window = resolveMainWindow() else { return }
 
     if UserDefaults.standard.bool(forKey: hideFromDockKey) {
       // In accessory mode: show as floating window without changing policy
@@ -159,7 +204,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDele
       NSApp.setActivationPolicy(.regular)
       // Show the window when returning to dock
       DispatchQueue.main.async { [self] in
-        if let window = mainWindow {
+        if let window = resolveMainWindow() {
           window.makeKeyAndOrderFront(nil)
         }
         NSApp.activate(ignoringOtherApps: true)
