@@ -114,18 +114,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDele
   private func rebuildMenu(_ menu: NSMenu) {
     menu.removeAllItems()
 
-    let showWindowItem = NSMenuItem(title: "Show Window", action: #selector(showMainWindow), keyEquivalent: "")
+    let showWindowItem = NSMenuItem(title: String(localized: "Show Window"), action: #selector(showMainWindow), keyEquivalent: "")
     showWindowItem.target = self
     menu.addItem(showWindowItem)
 
     menu.addItem(NSMenuItem.separator())
 
-    let autoStartItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleAutoStart(_:)), keyEquivalent: "")
+    let autoStartItem = NSMenuItem(title: String(localized: "Launch at Login"), action: #selector(toggleAutoStart(_:)), keyEquivalent: "")
     autoStartItem.target = self
     autoStartItem.state = isAutoStartEnabled() ? .on : .off
     menu.addItem(autoStartItem)
 
-    let showInDockItem = NSMenuItem(title: "Show in Dock", action: #selector(toggleShowInDock(_:)), keyEquivalent: "")
+    let showInDockItem = NSMenuItem(title: String(localized: "Show in Dock"), action: #selector(toggleShowInDock(_:)), keyEquivalent: "")
     showInDockItem.target = self
     showInDockItem.state = UserDefaults.standard.bool(forKey: hideFromDockKey) ? .off : .on
     menu.addItem(showInDockItem)
@@ -135,7 +135,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDele
     // No key equivalent: in a status-bar menu the shortcut only fires while the menu is
     // already open, but it forces AppKit to reserve a wide shortcut column across the whole
     // menu — making the menu noticeably wider than its content needs.
-    let exitItem = NSMenuItem(title: "Quit KokoroTTS", action: #selector(exitApp), keyEquivalent: "")
+    let exitItem = NSMenuItem(title: String(localized: "Quit KokoroTTS"), action: #selector(exitApp), keyEquivalent: "")
     exitItem.target = self
     menu.addItem(exitItem)
   }
